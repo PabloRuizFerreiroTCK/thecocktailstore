@@ -4,6 +4,14 @@ import { productsUI } from "./ui/productsUI.js";
 class App {
   constructor() {
     this.initializeApp();
+    // NUEVO: Evento de visualización de la página principal
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'view_item_list',
+      'item_list_id': '1',
+      'item_list_name': 'Todos',
+      'items': this.getProductItems()
+    });
   }
 
   initializeApp() {
@@ -11,6 +19,162 @@ class App {
     this.productsUI = productsUI;
 
     this.setupMobileMenu();
+
+    // NUEVO: Configurar eventos de tracking
+    this.setupEventTracking();
+  }
+
+  // NUEVO: Método para configurar eventos de tracking
+  setupEventTracking() {
+    // 1. Rastrear clic en "Ver Productos"
+    const viewProductsBtn = document.querySelector('.hero .button');
+    if (viewProductsBtn) {
+      viewProductsBtn.addEventListener('click', () => {
+        window.dataLayer.push({
+          'event': 'select_item',
+          'item_list_id': '1',
+          'item_list_name': 'Todos',
+          'items': this.getProductItems()
+        });
+      });
+    }
+
+    // 2. Rastrear clics en botones de filtro
+    const filterButtons = document.querySelectorAll('.filter__button');
+    filterButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const filter = e.target.dataset.filter;
+        const listName = filter === 'all' ? 'Todos' : 
+                      filter === 'laptops' ? 'Laptops' : 
+                      filter === 'smartphones' ? 'Smartphones' : 'Accesorios';
+      
+        window.dataLayer.push({
+          'event': 'select_item',
+          'item_list_id': '1',
+          'item_list_name': listName,
+          'items': this.getProductItems()
+        });
+      });
+    });
+
+    // 3. Rastrear clics en "Ver Detalles"
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('product__button') || e.target.closest('.product__button')) {
+        const productCard = e.target.closest('.product');
+        if (productCard) {
+          const productId = productCard.dataset.id;
+          const productName = productCard.querySelector('.product__title').textContent;
+          const productCategory = productCard.dataset.category;
+          const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
+        
+          window.dataLayer.push({
+            'event': 'select_item',
+            'item_list_id': '1',
+            'item_list_name': document.querySelector('.filter__button.active').textContent.trim(),
+            'items': [{
+              'item_id': productId,
+              'item_name': productName,
+              'item_category': productCategory,
+              'item_brand': 'TheCocktail',
+              'price': productPrice,
+              'currency': 'USD'
+            }]
+          });
+        }
+      }
+    });
+
+    // 4. Rastrear clics en "Añadir al Carrito" (icono azul)
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('product__cart') || e.target.closest('.product__cart')) {
+        const productCard = e.target.closest('.product');
+        if (productCard) {
+          const productId = productCard.dataset.id;
+          const productName = productCard.querySelector('.product__title').textContent;
+          const productCategory = productCard.dataset.category;
+          const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
+        
+          window.dataLayer.push({
+            'event': 'add_to_cart',
+            'item_list_id': '1',
+            'currency': 'USD',
+            'value': productPrice,
+            'items': [{
+              'item_id': productId,
+              'item_name': productName,
+              'item_category': productCategory,
+              'item_brand': 'TheCocktail',
+              'price': productPrice,
+              'quantity': 1
+            }]
+          });
+        }
+      }
+    });
+
+    // 5. Rastrear clics en el icono del carrito
+    const cartIcon = document.querySelector('.nav__cart-icon');
+    if (cartIcon) {
+      cartIcon.addEventListener('click', () => {
+        window.dataLayer.push({
+          'event': 'view_cart_icon_click',
+          'item_list_id': '1',
+          'currency': 'USD',
+          'items': this.getCartItems()
+        });
+      });
+    }
+
+    // 6. Rastrear clics en redes sociales
+    const socialLinks = document.querySelectorAll('.footer__social-link');
+    socialLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        const networkElement = e.target.closest('a').querySelector('i');
+        const network = networkElement.classList.contains('fa-facebook') ? 'Facebook' :
+                     networkElement.classList.contains('fa-twitter') ? 'Twitter' : 'Instagram';
+      
+        window.dataLayer.push({
+          'event': 'social_share',
+          'social_network': network,
+          'content_id': 'homepage'
+        });
+      });
+    });
+  }
+
+  // NUEVO: Método para obtener productos visibles
+  getProductItems() {
+    const products = document.querySelectorAll('.product');
+    const items = [];
+  
+    products.forEach(product => {
+      if (product.style.display !== 'none') {
+        items.push({
+          'item_id': product.dataset.id,
+          'item_name': product.querySelector('.product__title').textContent,
+          'item_category': product.dataset.category,
+          'item_brand': 'TheCocktail',
+          'price': parseFloat(product.querySelector('.product__price').textContent.replace('$', '')),
+          'quantity': 1,
+          'currency': 'USD'
+        });
+      }
+    });
+  
+    return items;
+  }
+
+  // NUEVO: Método para obtener productos del carrito
+  getCartItems() {
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    return cart.map(item => ({
+      'item_id': item.id,
+      'item_name': item.name,
+      'item_category': item.category,
+      'item_brand': 'TheCocktail',
+      'price': item.price,
+      'quantity': item.quantity
+    }));
   }
 
   setupMobileMenu() {
