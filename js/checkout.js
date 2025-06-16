@@ -3,7 +3,7 @@ import { CheckoutUI } from "./ui/checkoutUI.js";
 document.addEventListener("DOMContentLoaded", () => {
 const checkoutUI = new CheckoutUI();
 
-// NUEVO: Esperar a que los datos se carguen
+// Esperar a que los datos se carguen
 setTimeout(() => {
   // Evento de visualización de la página de envío
   trackCheckoutView();
@@ -13,26 +13,30 @@ setTimeout(() => {
 }, 1000);
 });
 
-// NUEVO: Función para rastrear visualización de la página de envío
 function trackCheckoutView() {
 const cartItems = getCartItems();
 const cartTotal = calculateCartTotal(cartItems);
 const couponCode = getCouponCode();
+const listId = localStorage.getItem('last_list_id') || '1';
+const listName = localStorage.getItem('last_list_name') || 'Todos';
 
+window.dataLayer = window.dataLayer || [];
 window.dataLayer.push({
-  'event': 'checkout_progress',
-  'item_list_id': '1',
+  'event': 'view_sending_page',
+  'item_list_id': listId,
+  'item_list_name': listName,
   'checkout_step': 1,
   'currency': 'USD',
   'coupon': couponCode,
+  'has_coupon': checkIfCouponApplied(),
   'shipping_tier': 'Envío Estándar', // Valor por defecto
   'taxes': 0,
   'value': cartTotal,
   'items': cartItems
 });
+console.log('Evento view_sending_page enviado');
 }
 
-// NUEVO: Función para configurar eventos de tracking
 function setupEventTracking() {
 // Rastrear selección de país
 const countrySelect = document.getElementById('country');
@@ -40,13 +44,20 @@ if (countrySelect) {
   countrySelect.addEventListener('change', () => {
     if (countrySelect.value) {
       const selectedCountry = countrySelect.options[countrySelect.selectedIndex].text;
+      const listId = localStorage.getItem('last_list_id') || '1';
+      const listName = localStorage.getItem('last_list_name') || 'Todos';
       
+      window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         'event': 'add_shipping_info',
-        'item_list_id': '1',
+        'item_list_id': listId,
+        'item_list_name': listName,
         'selected_value': selectedCountry,
-        'country': selectedCountry
+        'country': selectedCountry,
+        'coupon': getCouponCode(),
+        'has_coupon': checkIfCouponApplied()
       });
+      console.log(`Evento add_shipping_info enviado: País ${selectedCountry}`);
     }
   });
 }
@@ -59,19 +70,28 @@ shippingOptions.forEach(option => {
     const cartItems = getCartItems();
     const cartTotal = calculateCartTotal(cartItems);
     const couponCode = getCouponCode();
+    const listId = localStorage.getItem('last_list_id') || '1';
+    const listName = localStorage.getItem('last_list_name') || 'Todos';
     
+    // Guardar el método de envío en localStorage
+    localStorage.setItem('shipping_method', shippingMethod);
+    
+    window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       'event': 'add_shipping_info',
-      'item_list_id': '1',
+      'item_list_id': listId,
+      'item_list_name': listName,
       'currency': 'USD',
       'shipping_tier': shippingMethod,
       'taxes': 0,
       'value': cartTotal,
       'coupon': couponCode,
+      'has_coupon': checkIfCouponApplied(),
       'items': [{
         'item_id': e.target.id === 'standard' ? '1' : '2'
       }]
     });
+    console.log(`Evento add_shipping_info enviado: Método ${shippingMethod}`);
   });
 });
 
@@ -84,37 +104,53 @@ if (shippingForm) {
     const shippingMethod = document.querySelector('input[name="shipping"]:checked').id === 'standard' ? 'Envío Estándar' : 'Envío Express';
     const cartItems = getCartItems();
     const cartTotal = calculateCartTotal(cartItems);
+    const listId = localStorage.getItem('last_list_id') || '1';
+    const listName = localStorage.getItem('last_list_name') || 'Todos';
     
+    // Guardar el método de envío en localStorage
+    localStorage.setItem('shipping_method', shippingMethod);
+    
+    window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       'event': 'checkout_progress',
-      'item_list_id': '1',
+      'item_list_id': listId,
+      'item_list_name': listName,
       'checkout_step': 2,
       'shipping_tier': shippingMethod,
       'currency': 'USD',
       'taxes': 0,
       'value': cartTotal,
+      'coupon': getCouponCode(),
+      'has_coupon': checkIfCouponApplied(),
       'items': cartItems
     });
+    console.log('Evento checkout_progress enviado: Continuar a Pago');
   });
 }
 
-// CORREGIDO: Rastrear clic en "Volver al Carrito"
+// Rastrear clic en "Volver al Carrito"
 const backToCartBtn = document.querySelector('a[href="/cart.html"]');
 if (backToCartBtn) {
   backToCartBtn.addEventListener('click', () => {
     const cartItems = getCartItems();
+    const listId = localStorage.getItem('last_list_id') || '1';
+    const listName = localStorage.getItem('last_list_name') || 'Todos';
     
+    window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
-      'event': 'view_cart_icon_click',
-      'item_list_id': '1',
+      'event': 'view_cart_click',
+      'item_list_id': listId,
+      'item_list_name': listName,
       'currency': 'USD',
+      'coupon': getCouponCode(),
+      'has_coupon': checkIfCouponApplied(),
       'items': cartItems
     });
+    console.log('Evento view_cart_click enviado: Volver al Carrito');
   });
 }
 }
 
-// NUEVO: Función para obtener productos del carrito
 function getCartItems() {
 try {
   const orderItems = document.querySelectorAll('.order-item');
@@ -151,12 +187,14 @@ try {
 }
 }
 
-// NUEVO: Función para calcular el total del carrito
 function calculateCartTotal(cartItems) {
 return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 }
 
-// NUEVO: Función para obtener el código de cupón
 function getCouponCode() {
 return localStorage.getItem('coupon') || '';
+}
+
+function checkIfCouponApplied() {
+return localStorage.getItem('has_coupon') === 'true';
 }

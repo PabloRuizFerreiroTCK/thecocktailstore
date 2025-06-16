@@ -3,7 +3,7 @@ import { ConfirmationUI } from "./ui/confirmationUI.js";
 document.addEventListener("DOMContentLoaded", () => {
 const confirmationUI = new ConfirmationUI();
 
-// NUEVO: Esperar a que los datos se carguen
+// Esperar a que los datos se carguen
 setTimeout(() => {
   // Evento de compra completada
   trackPurchase();
@@ -13,7 +13,6 @@ setTimeout(() => {
 }, 1000);
 });
 
-// NUEVO: Función para rastrear la compra
 function trackPurchase() {
 const cartItems = getCartItems();
 const cartTotal = calculateCartTotal(cartItems);
@@ -21,13 +20,17 @@ const shippingMethod = getShippingMethod();
 const paymentMethod = getPaymentMethod();
 const couponCode = getCouponCode();
 const transactionId = generateTransactionId();
+const listId = localStorage.getItem('last_list_id') || '1';
+const listName = localStorage.getItem('last_list_name') || 'Todos';
 
 // Guardar el ID de transacción para referencia futura
 localStorage.setItem('last_transaction_id', transactionId);
 
+window.dataLayer = window.dataLayer || [];
 window.dataLayer.push({
   'event': 'purchase',
-  'item_list_id': '1',
+  'item_list_id': listId,
+  'item_list_name': listName,
   'transaction_id': transactionId,
   'checkout_step': 3,
   'payment_type': paymentMethod,
@@ -36,28 +39,40 @@ window.dataLayer.push({
   'taxes': 0,
   'value': cartTotal,
   'coupon': couponCode,
+  'has_coupon': checkIfCouponApplied(),
   'items': cartItems
 });
+console.log(`Evento purchase enviado: Transacción ${transactionId}`);
 }
 
-// NUEVO: Función para configurar eventos de tracking
 function setupEventTracking() {
 // Rastrear clic en "Continuar Comprando"
 const continueShoppingBtn = document.querySelector('.button.button--primary');
 if (continueShoppingBtn) {
   continueShoppingBtn.addEventListener('click', () => {
+    const listId = localStorage.getItem('last_list_id') || '1';
+    const listName = localStorage.getItem('last_list_name') || 'Todos';
+    
+    window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       'event': 'continue_shopping',
-      'item_list_id': '1',
+      'item_list_id': listId,
+      'item_list_name': listName,
       'currency': 'USD',
       'coupon': getCouponCode(),
+      'has_coupon': checkIfCouponApplied(),
       'items': getCartItems()
     });
+    console.log('Evento continue_shopping enviado');
+    
+    // Limpiar el carrito y los cupones después de una compra exitosa
+    localStorage.removeItem('cart');
+    localStorage.removeItem('coupon');
+    localStorage.removeItem('has_coupon');
   });
 }
 }
 
-// NUEVO: Función para obtener productos del carrito
 function getCartItems() {
 try {
   const orderItems = document.querySelectorAll('.order-item');
@@ -94,27 +109,26 @@ try {
 }
 }
 
-// NUEVO: Función para calcular el total del carrito
 function calculateCartTotal(cartItems) {
 return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 }
 
-// NUEVO: Función para obtener el código de cupón
 function getCouponCode() {
 return localStorage.getItem('coupon') || '';
 }
 
-// NUEVO: Función para obtener el método de envío
+function checkIfCouponApplied() {
+return localStorage.getItem('has_coupon') === 'true';
+}
+
 function getShippingMethod() {
 return localStorage.getItem('shipping_method') || 'Envío Estándar';
 }
 
-// NUEVO: Función para obtener el método de pago
 function getPaymentMethod() {
 return localStorage.getItem('payment_method') || 'Tarjeta';
 }
 
-// NUEVO: Función para generar un ID de transacción único
 function generateTransactionId() {
 return '111111-' + Math.floor(Math.random() * 1000000);
 }

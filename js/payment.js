@@ -3,7 +3,7 @@ import { PaymentUI } from "./ui/paymentUI.js";
 document.addEventListener("DOMContentLoaded", () => {
 const paymentUI = new PaymentUI();
 
-// NUEVO: Esperar a que los datos se carguen
+// Esperar a que los datos se carguen
 setTimeout(() => {
   // Evento de visualización de la página de pago
   trackPaymentView();
@@ -13,46 +13,62 @@ setTimeout(() => {
 }, 1000);
 });
 
-// NUEVO: Función para rastrear visualización de la página de pago
 function trackPaymentView() {
 const cartItems = getCartItems();
 const cartTotal = calculateCartTotal(cartItems);
 const shippingMethod = getShippingMethod();
+const listId = localStorage.getItem('last_list_id') || '1';
+const listName = localStorage.getItem('last_list_name') || 'Todos';
 
+window.dataLayer = window.dataLayer || [];
 window.dataLayer.push({
-  'event': 'checkout_progress',
-  'item_list_id': '1',
+  'event': 'view_payment_page',
+  'item_list_id': listId,
+  'item_list_name': listName,
   'checkout_step': 2,
   'payment_type': 'Tarjeta', // Valor por defecto
   'shipping_tier': shippingMethod,
   'currency': 'USD',
   'taxes': 0,
   'value': cartTotal,
+  'coupon': getCouponCode(),
+  'has_coupon': checkIfCouponApplied(),
   'items': cartItems
 });
+console.log('Evento view_payment_page enviado');
 }
 
-// NUEVO: Función para configurar eventos de tracking
 function setupEventTracking() {
 // Rastrear selección de método de pago
 const paymentOptions = document.querySelectorAll('input[name="payment"]');
 paymentOptions.forEach(option => {
   option.addEventListener('change', (e) => {
     const paymentMethod = e.target.id === 'credit-card' ? 'Tarjeta' : 'Paypal';
-    const cartTotal = calculateCartTotal(getCartItems());
+    const cartItems = getCartItems();
+    const cartTotal = calculateCartTotal(cartItems);
     const couponCode = getCouponCode();
+    const listId = localStorage.getItem('last_list_id') || '1';
+    const listName = localStorage.getItem('last_list_name') || 'Todos';
     
+    // Guardar el método de pago en localStorage
+    localStorage.setItem('payment_method', paymentMethod);
+    
+    window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       'event': 'add_payment_info',
+      'item_list_id': listId,
+      'item_list_name': listName,
       'payment_type': paymentMethod,
       'value': cartTotal,
       'currency': 'USD',
       'taxes': 0,
       'coupon': couponCode,
+      'has_coupon': checkIfCouponApplied(),
       'items': [{
         'item_id': e.target.id === 'credit-card' ? '1' : '2'
       }]
     });
+    console.log(`Evento add_payment_info enviado: Método ${paymentMethod}`);
   });
 });
 
@@ -66,36 +82,55 @@ if (paymentForm) {
     const shippingMethod = getShippingMethod();
     const cartItems = getCartItems();
     const cartTotal = calculateCartTotal(cartItems);
+    const listId = localStorage.getItem('last_list_id') || '1';
+    const listName = localStorage.getItem('last_list_name') || 'Todos';
     
+    // Guardar el método de pago en localStorage
+    localStorage.setItem('payment_method', paymentMethod);
+    
+    window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       'event': 'checkout_progress',
+      'item_list_id': listId,
+      'item_list_name': listName,
       'checkout_step': 3,
       'payment_type': paymentMethod,
       'shipping_tier': shippingMethod,
       'currency': 'USD',
       'taxes': 0,
       'value': cartTotal,
+      'coupon': getCouponCode(),
+      'has_coupon': checkIfCouponApplied(),
       'items': cartItems
     });
+    console.log('Evento checkout_progress enviado: Revisar y Finalizar');
   });
 }
 
-// CORREGIDO: Rastrear clic en "Volver a Envío"
+// Rastrear clic en "Volver a Envío"
 const backToShippingBtn = document.querySelector('a[href="/checkout.html"]');
 if (backToShippingBtn) {
   backToShippingBtn.addEventListener('click', () => {
+    const cartItems = getCartItems();
+    const listId = localStorage.getItem('last_list_id') || '1';
+    const listName = localStorage.getItem('last_list_name') || 'Todos';
+    
+    window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
-      'event': 'begin_checkout',
+      'event': 'view_sending_page',
+      'item_list_id': listId,
+      'item_list_name': listName,
       'checkout_step': 1,
       'currency': 'USD',
       'coupon': getCouponCode(),
-      'items': getCartItems()
+      'has_coupon': checkIfCouponApplied(),
+      'items': cartItems
     });
+    console.log('Evento view_sending_page enviado: Volver a Envío');
   });
 }
 }
 
-// NUEVO: Función para obtener productos del carrito
 function getCartItems() {
 try {
   const orderItems = document.querySelectorAll('.order-item');
@@ -132,17 +167,18 @@ try {
 }
 }
 
-// NUEVO: Función para calcular el total del carrito
 function calculateCartTotal(cartItems) {
 return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 }
 
-// NUEVO: Función para obtener el código de cupón
 function getCouponCode() {
 return localStorage.getItem('coupon') || '';
 }
 
-// NUEVO: Función para obtener el método de envío
+function checkIfCouponApplied() {
+return localStorage.getItem('has_coupon') === 'true';
+}
+
 function getShippingMethod() {
 return localStorage.getItem('shipping_method') || 'Envío Estándar';
 }
