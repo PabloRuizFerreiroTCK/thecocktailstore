@@ -69,12 +69,14 @@ setupEventTracking() {
     });
   });
 
-  // Rastrear clics en "Ver Detalles"
-document.querySelectorAll('.product__button').forEach(button => {
-button.addEventListener('click', function(e) {
+  // 3. Rastrear clics en "Ver Detalles"
+document.addEventListener('click', (e) => {
+// Buscar si el clic fue en un botón "Ver Detalles" o en algún elemento dentro de él
+const detailsButton = e.target.closest('.product__button');
+if (detailsButton) {
   e.preventDefault(); // Prevenir comportamiento predeterminado
   
-  const productCard = this.closest('.product');
+  const productCard = detailsButton.closest('.product');
   if (productCard) {
     const productId = productCard.dataset.id;
     const productName = productCard.querySelector('.product__title').textContent;
@@ -86,14 +88,15 @@ button.addEventListener('click', function(e) {
     localStorage.setItem('last_viewed_product_name', productName);
     localStorage.setItem('last_viewed_product_category', productCategory);
     localStorage.setItem('last_viewed_product_price', productPrice);
-    localStorage.setItem('last_list_id', window.app.currentListId);
-    localStorage.setItem('last_list_name', window.app.currentListName);
+    localStorage.setItem('last_list_id', this.currentListId);
+    localStorage.setItem('last_list_name', this.currentListName);
     
+    // Enviar el evento select_item
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       'event': 'select_item',
-      'item_list_id': window.app.currentListId,
-      'item_list_name': window.app.currentListName,
+      'item_list_id': this.currentListId,
+      'item_list_name': this.currentListName,
       'items': [{
         'item_id': productId,
         'item_name': productName,
@@ -110,15 +113,17 @@ button.addEventListener('click', function(e) {
       window.location.href = `product.html?id=${productId}`;
     }, 100);
   }
-});
+}
 });
 
- // 4. Rastrear clics en "Añadir al Carrito" (icono azul)
-document.querySelectorAll('.product__cart').forEach(button => {
-button.addEventListener('click', (e) => {
-  e.preventDefault();
+// 4. Rastrear clics en "Añadir al Carrito" (icono azul)
+document.addEventListener('click', (e) => {
+// Buscar si el clic fue en un icono de carrito o en algún elemento dentro de él
+const cartButton = e.target.closest('.product__cart');
+if (cartButton) {
+  e.preventDefault(); // Prevenir comportamiento predeterminado
   
-  const productCard = button.closest('.product');
+  const productCard = cartButton.closest('.product');
   if (productCard) {
     const productId = productCard.dataset.id;
     const productName = productCard.querySelector('.product__title').textContent;
@@ -158,7 +163,7 @@ button.addEventListener('click', (e) => {
     });
     console.log(`Evento add_to_cart enviado: ${productName} (icono azul)`);
   }
-});
+}
 });
 
   // 5. Rastrear clics en el icono del carrito
