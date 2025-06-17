@@ -7,11 +7,12 @@ const checkoutUI = new CheckoutUI();
 setTimeout(() => {
   trackCheckoutView();
   setupEventTracking();
-}, 1000);
+}, 500);
 });
 
 function trackCheckoutView() {
 const cartItems = getCartItems();
+const cartTotal = calculateCartTotal(cartItems);
 const couponCode = localStorage.getItem('coupon') || '';
 const hasCoupon = localStorage.getItem('has_coupon') === 'true';
 const listId = localStorage.getItem('last_list_id') || '1';
@@ -25,6 +26,7 @@ window.dataLayer.push({
   'checkout_step': 1,
   'currency': 'USD',
   'shipping_tier': shippingMethod,
+  'value': cartTotal,
   'coupon': couponCode,
   'has_coupon': hasCoupon,
   'items': cartItems
@@ -61,9 +63,8 @@ shippingOptions.forEach(option => {
   option.addEventListener('change', (e) => {
     const shippingMethod = e.target.id === 'standard' ? 'Envío Estándar' : 'Envío Express';
     const cartItems = getCartItems();
+    const cartTotal = calculateCartTotal(cartItems);
     const couponCode = localStorage.getItem('coupon') || '';
-    const listId = localStorage.getItem('last_list_id') || '1';
-    const listName = localStorage.getItem('last_list_name') || 'Todos';
     
     // Guardar el método de envío en localStorage
     localStorage.setItem('shipping_method', shippingMethod);
@@ -74,6 +75,7 @@ shippingOptions.forEach(option => {
       'item_list_id': listId,
       'currency': 'USD',
       'shipping_tier': shippingMethod,
+      'value': cartTotal,
       'coupon': couponCode,
       'items': cartItems
     });
@@ -85,12 +87,13 @@ shippingOptions.forEach(option => {
 const shippingForm = document.getElementById('shipping-form');
 if (shippingForm) {
   shippingForm.addEventListener('submit', (e) => {
-    // No prevenir el envío del formulario
+    e.preventDefault();
     
     const shippingMethod = document.querySelector('input[name="shipping"]:checked').id === 'standard' ? 'Envío Estándar' : 'Envío Express';
     const cartItems = getCartItems();
-    const listId = localStorage.getItem('last_list_id') || '1';
-    const listName = localStorage.getItem('last_list_name') || 'Todos';
+    const cartTotal = calculateCartTotal(cartItems);
+    const couponCode = localStorage.getItem('coupon') || '';
+    const hasCoupon = localStorage.getItem('has_coupon') === 'true';
     
     // Guardar el método de envío en localStorage
     localStorage.setItem('shipping_method', shippingMethod);
@@ -102,50 +105,84 @@ if (shippingForm) {
       'checkout_step': 2,
       'shipping_tier': shippingMethod,
       'currency': 'USD',
-      'coupon': getCouponCode(),
-      'has_coupon': checkIfCouponApplied(),
+      'value': cartTotal,
+      'coupon': couponCode,
+      'has_coupon': hasCoupon,
       'items': cartItems
     });
     console.log('Evento checkout_progress enviado: Continuar a Pago');
+    
+    setTimeout(() => {
+      window.location.href = 'payment.html';
+    }, 100);
   });
 }
 
 // Rastrear clic en "Volver al Carrito"
 const backToCartBtn = document.querySelector('a[href="/cart.html"]');
 if (backToCartBtn) {
-  backToCartBtn.addEventListener('click', () => {
+  backToCartBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    
     const cartItems = getCartItems();
-    const listId = localStorage.getItem('last_list_id') || '1';
-    const listName = localStorage.getItem('last_list_name') || 'Todos';
+    const cartTotal = calculateCartTotal(cartItems);
     
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       'event': 'view_cart_click',
       'item_list_id': listId,
       'currency': 'USD',
+      'value': cartTotal,
       'items': cartItems
     });
     console.log('Evento view_cart_click enviado: Volver al Carrito');
+    
+    setTimeout(() => {
+      window.location.href = 'cart.html';
+    }, 100);
   });
 }
 }
 
 function getCartItems() {
-const cart = JSON.parse(localStorage.getItem('cart')) || [];
-return cart.map(item => ({
-  'item_id': item.id,
-  'item_name': item.name,
-  'item_category': item.category || 'laptops',
-  'item_brand': 'TheCocktail',
-  'price': item.price,
-  'quantity': item.quantity
-}));
+try {
+  // Intentar obtener los items del DOM primero
+  const orderItems = document.querySelectorAll('.order-item');
+  if (orderItems.length > 0) {
+    return Array.from(orderItems).map(item => {
+      const id = item.dataset.id;
+      const name = item.querySelector('.item-name')?.textContent || 'Producto';
+      const category = item.dataset.category || 'Categoría';
+      const price = parseFloat(item.dataset.price || 0);
+      const quantity = parseInt(item.querySelector('.item-quantity')?.textContent || 1);
+      
+      return {
+        'item_id': id,
+        'item_name': name,
+        'item_category': category,
+        'item_brand': 'TheCocktail',
+        'price': price,
+        'quantity': quantity
+      };
+    });
+  }
+  
+  // Si no hay elementos en el DOM, usar localStorage
+  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  return cart.map(item => ({
+    'item_id': item.id,
+    'item_name': item.name,
+    'item_category': item.category,
+    'item_brand': 'TheCocktail',
+    'price': item.price,
+    'quantity': item.quantity
+  }));
+} catch (error) {
+  console.error('Error obteniendo items del checkout:', error);
+  return [];
+}
 }
 
-function getCouponCode() {
-return localStorage.getItem('coupon') || '';
-}
-
-function checkIfCouponApplied() {
-return localStorage.getItem('has_coupon') === 'true';
+function calculateCartTotal(cartItems) {
+return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 }
