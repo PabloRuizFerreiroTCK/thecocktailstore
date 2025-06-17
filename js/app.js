@@ -82,49 +82,55 @@ setupEventTracking() {
   });
 
   // 3. Rastrear clics en "Ver Detalles"
-  document.addEventListener('click', (e) => {
-    const detailsButton = e.target.closest('.product__button');
-    if (detailsButton) {
-      e.preventDefault();
-      
-      const productCard = detailsButton.closest('.product');
-      if (productCard) {
-        const productId = productCard.dataset.id;
-        const productName = productCard.querySelector('.product__title').textContent;
-        const productCategory = productCard.dataset.category;
-        const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
-        
-        // Guardar información del producto y lista en localStorage
-        localStorage.setItem('last_viewed_product_id', productId);
-        localStorage.setItem('last_viewed_product_name', productName);
-        localStorage.setItem('last_viewed_product_category', productCategory);
-        localStorage.setItem('last_viewed_product_price', productPrice);
-        localStorage.setItem('last_list_id', this.currentListId);
-        localStorage.setItem('last_list_name', this.currentListName);
-        
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'select_item',
-          'item_list_id': this.currentListId,
-          'item_list_name': this.currentListName,
-          'currency': 'USD',
-          'items': [{
-            'item_id': productId,
-            'item_name': productName,
-            'item_category': productCategory,
-            'item_brand': 'TheCocktail',
-            'price': productPrice
-          }]
-        });
-        console.log(`Evento select_item enviado: Ver Detalles de ${productName}`);
-        
-        // Redirigir después de enviar el evento
-        setTimeout(() => {
-          window.location.href = `product.html?id=${productId}`;
-        }, 100);
-      }
-    }
-  });
+const self = this; // Guardar referencia a 'this' para usar dentro del event listener
+document.addEventListener('click', function(e) {
+// Buscar si el clic fue en un botón "Ver Detalles" o en algún elemento dentro de él
+const detailsButton = e.target.closest('a.button.button--secondary');
+if (detailsButton && detailsButton.textContent.trim() === 'Ver Detalles') {
+  e.preventDefault(); // Prevenir comportamiento predeterminado
+  
+  const productCard = detailsButton.closest('.product');
+  if (productCard) {
+    const productId = productCard.dataset.id;
+    const productName = productCard.querySelector('.product__title').textContent;
+    const productCategory = productCard.dataset.category || 'laptops';
+    const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
+    
+    // Guardar información del producto y lista en localStorage para usar en otras páginas
+    localStorage.setItem('last_viewed_product_id', productId);
+    localStorage.setItem('last_viewed_product_name', productName);
+    localStorage.setItem('last_viewed_product_category', productCategory);
+    localStorage.setItem('last_viewed_product_price', productPrice);
+    localStorage.setItem('last_list_id', self.currentListId);
+    localStorage.setItem('last_list_name', self.currentListName);
+    
+    // Enviar el evento select_item
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'select_item',
+      'item_list_id': self.currentListId,
+      'item_list_name': self.currentListName,
+      'currency': 'USD',
+      'items': [{
+        'item_id': productId,
+        'item_name': productName,
+        'item_category': productCategory,
+        'item_brand': 'TheCocktail',
+        'price': productPrice
+      }]
+    });
+    console.log(`Evento select_item enviado: Ver Detalles de ${productName}`);
+    
+    // Obtener la URL de destino del atributo href
+    const href = detailsButton.getAttribute('href');
+    
+    // Redirigir después de enviar el evento
+    setTimeout(() => {
+      window.location.href = href;
+    }, 100);
+  }
+}
+});
 
   // 4. Rastrear clics en "Añadir al Carrito" (icono azul)
   document.addEventListener('click', (e) => {
