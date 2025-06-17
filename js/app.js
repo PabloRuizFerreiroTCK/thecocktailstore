@@ -81,94 +81,94 @@ setupEventTracking() {
     });
   });
 
-  // 3. Rastrear clics en "Ver Detalles"
-  document.addEventListener('click', (e) => {
-    const detailsButton = e.target.closest('.product__button');
-    if (detailsButton) {
-      e.preventDefault();
-      
-      const productCard = detailsButton.closest('.product');
-      if (productCard) {
-        const productId = productCard.dataset.id;
-        const productName = productCard.querySelector('.product__title').textContent;
-        const productCategory = productCard.dataset.category;
-        const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
+  // 3. Rastrear clics en "Ver Detalles" - CORREGIDO
+  document.querySelectorAll('.product__button--secondary, .button.button--secondary').forEach(button => {
+    if (button.textContent.trim() === 'Ver Detalles') {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
         
-        // Guardar información del producto y lista en localStorage
-        localStorage.setItem('last_viewed_product_id', productId);
-        localStorage.setItem('last_viewed_product_name', productName);
-        localStorage.setItem('last_viewed_product_category', productCategory);
-        localStorage.setItem('last_viewed_product_price', productPrice);
-        localStorage.setItem('last_list_id', this.currentListId);
-        localStorage.setItem('last_list_name', this.currentListName);
-        
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'select_item',
-          'item_list_id': this.currentListId,
-          'item_list_name': this.currentListName,
-          'currency': 'USD',
-          'items': [{
-            'item_id': productId,
-            'item_name': productName,
-            'item_category': productCategory,
-            'item_brand': 'TheCocktail',
-            'price': productPrice
-          }]
-        });
-        console.log(`Evento select_item enviado: Ver Detalles de ${productName}`);
-        
-        // Redirigir después de enviar el evento
-        setTimeout(() => {
-          window.location.href = `product.html?id=${productId}`;
-        }, 100);
-      }
+        const productCard = button.closest('.product');
+        if (productCard) {
+          const productId = productCard.dataset.id;
+          const productName = productCard.querySelector('.product__title').textContent;
+          const productCategory = productCard.dataset.category;
+          const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
+          
+          // Guardar información del producto y lista en localStorage
+          localStorage.setItem('last_viewed_product_id', productId);
+          localStorage.setItem('last_viewed_product_name', productName);
+          localStorage.setItem('last_viewed_product_category', productCategory);
+          localStorage.setItem('last_viewed_product_price', productPrice);
+          localStorage.setItem('last_list_id', this.currentListId);
+          localStorage.setItem('last_list_name', this.currentListName);
+          
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            'event': 'select_item',
+            'item_list_id': this.currentListId,
+            'item_list_name': this.currentListName,
+            'currency': 'USD',
+            'items': [{
+              'item_id': productId,
+              'item_name': productName,
+              'item_category': productCategory,
+              'item_brand': 'TheCocktail',
+              'price': productPrice
+            }]
+          });
+          console.log(`Evento select_item enviado: Ver Detalles de ${productName}`);
+          
+          // Redirigir después de enviar el evento
+          setTimeout(() => {
+            window.location.href = `product.html?id=${productId}`;
+          }, 100);
+        }
+      });
     }
   });
 
-  // 4. Rastrear clics en "Añadir al Carrito" (icono azul)
-  document.addEventListener('click', (e) => {
-    const cartButton = e.target.closest('.product__cart');
-    if (cartButton) {
-      e.preventDefault();
-      
-      const productCard = cartButton.closest('.product');
-      if (productCard) {
-        const productId = productCard.dataset.id;
-        const productName = productCard.querySelector('.product__title').textContent;
-        const productCategory = productCard.dataset.category;
-        const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
-        const quantity = 1;
-        const value = productPrice * quantity;
-        
-        // Añadir el producto al carrito
-        if (this.cartUI && typeof this.cartUI.addToCart === 'function') {
-          this.cartUI.addToCart({
-            id: productId,
-            name: productName,
-            category: productCategory,
-            price: productPrice,
-            quantity: quantity
+  // 4. Rastrear clics en "Añadir al Carrito" (botón azul) - CORREGIDO
+  document.querySelectorAll('.product__button, .button.product__button').forEach(button => {
+    if (button.textContent.trim() === 'Añadir al Carrito') {
+      button.addEventListener('click', (e) => {
+        const productCard = button.closest('.product');
+        if (productCard) {
+          const productId = productCard.dataset.id;
+          const productName = productCard.querySelector('.product__title').textContent;
+          const productCategory = productCard.dataset.category;
+          const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
+          const quantity = 1;
+          const value = productPrice * quantity;
+          
+          // Añadir el producto al carrito
+          if (this.cartUI && typeof this.cartUI.addToCart === 'function') {
+            this.cartUI.addToCart({
+              id: productId,
+              name: productName,
+              category: productCategory,
+              price: productPrice,
+              quantity: quantity
+            });
+          }
+          
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            'event': 'add_to_cart',
+            'currency': 'USD',
+            'item_list_id': this.currentListId,
+            'value': value,
+            'items': [{
+              'item_id': productId,
+              'item_name': productName,
+              'item_category': productCategory,
+              'item_brand': 'TheCocktail',
+              'price': productPrice,
+              'quantity': quantity
+            }]
           });
+          console.log(`Evento add_to_cart enviado: ${productName}`);
         }
-        
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'add_to_cart',
-          'currency': 'USD',
-          'item_list_id': this.currentListId,
-          'value': value,
-          'items': [{
-            'item_id': productId,
-            'item_name': productName,
-            'item_category': productCategory,
-            'item_brand': 'TheCocktail',
-            'price': productPrice,
-            'quantity': quantity
-          }]
-        });
-        console.log(`Evento add_to_cart enviado: ${productName}`);
-      }
+      });
     }
   });
 
@@ -273,73 +273,6 @@ setupCartModalEvents() {
       }, 100);
     };
   }
-  
-  // Configurar los botones + y - en el carrito desplegable
-  const plusButtons = document.querySelectorAll('.cart-modal__item-quantity-btn.plus');
-  const minusButtons = document.querySelectorAll('.cart-modal__item-quantity-btn.minus');
-  const self = this;
-  
-  plusButtons.forEach(btn => {
-    btn.onclick = function() {
-      const cartItem = this.closest('.cart-modal__item');
-      if (!cartItem) return;
-      
-      const productId = cartItem.dataset.id;
-      const productName = cartItem.querySelector('.cart-modal__item-name').textContent;
-      const productCategory = cartItem.dataset.category || 'Categoría';
-      const productPrice = parseFloat(cartItem.dataset.price || 0);
-      const quantity = 1;
-      const value = productPrice * quantity;
-      
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'event': 'add_to_cart',
-        'item_list_id': self.currentListId,
-        'currency': 'USD',
-        'value': value,
-        'items': [{
-          'item_id': productId,
-          'item_name': productName,
-          'item_category': productCategory,
-          'item_brand': 'TheCocktail',
-          'price': productPrice,
-          'quantity': quantity
-        }]
-      });
-      console.log(`Evento add_to_cart enviado: ${productName} +1`);
-    };
-  });
-  
-  minusButtons.forEach(btn => {
-    btn.onclick = function() {
-      const cartItem = this.closest('.cart-modal__item');
-      if (!cartItem) return;
-      
-      const productId = cartItem.dataset.id;
-      const productName = cartItem.querySelector('.cart-modal__item-name').textContent;
-      const productCategory = cartItem.dataset.category || 'Categoría';
-      const productPrice = parseFloat(cartItem.dataset.price || 0);
-      const quantity = 1;
-      const value = productPrice * quantity;
-      
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'event': 'remove_from_cart',
-        'item_list_id': self.currentListId,
-        'currency': 'USD',
-        'value': value,
-        'items': [{
-          'item_id': productId,
-          'item_name': productName,
-          'item_category': productCategory,
-          'item_brand': 'TheCocktail',
-          'price': productPrice,
-          'quantity': quantity
-        }]
-      });
-      console.log(`Evento remove_from_cart enviado: ${productName} -1`);
-    };
-  });
 }
 
 getProductItems() {
@@ -348,10 +281,15 @@ getProductItems() {
   
   products.forEach(product => {
     if (product.style.display !== 'none') {
+      const category = product.dataset.category || 
+                     (product.classList.contains('laptops') ? 'laptops' : 
+                      product.classList.contains('smartphones') ? 'smartphones' : 
+                      product.classList.contains('accessories') ? 'accesorios' : 'Categoría');
+      
       items.push({
         'item_id': product.dataset.id,
         'item_name': product.querySelector('.product__title').textContent,
-        'item_category': product.dataset.category,
+        'item_category': category,
         'item_brand': 'TheCocktail',
         'price': parseFloat(product.querySelector('.product__price').textContent.replace('$', '')),
         'quantity': 1
@@ -367,7 +305,7 @@ getCartItems() {
   return cart.map(item => ({
     'item_id': item.id,
     'item_name': item.name,
-    'item_category': item.category,
+    'item_category': item.category || 'laptops', // Valor por defecto si no hay categoría
     'item_brand': 'TheCocktail',
     'price': item.price,
     'quantity': item.quantity

@@ -79,11 +79,13 @@ try {
   const orderItems = document.querySelectorAll('.order-item');
   if (orderItems.length > 0) {
     return Array.from(orderItems).map(item => {
-      const id = item.dataset.id;
+      const id = item.dataset.id || '';
       const name = item.querySelector('.item-name')?.textContent || 'Producto';
-      const category = item.dataset.category || 'Categoría';
-      const price = parseFloat(item.dataset.price || 0);
-      const quantity = parseInt(item.querySelector('.item-quantity')?.textContent || 1);
+      const category = item.dataset.category || 'laptops';
+      const priceElement = item.querySelector('.item-price');
+      const price = priceElement ? parseFloat(priceElement.textContent.replace('$', '')) : 0;
+      const quantityElement = item.querySelector('.item-quantity');
+      const quantity = quantityElement ? parseInt(quantityElement.textContent) : 1;
       
       return {
         'item_id': id,
@@ -101,7 +103,7 @@ try {
   return cart.map(item => ({
     'item_id': item.id,
     'item_name': item.name,
-    'item_category': item.category,
+    'item_category': item.category || 'laptops',
     'item_brand': 'TheCocktail',
     'price': item.price,
     'quantity': item.quantity
@@ -113,7 +115,17 @@ try {
 }
 
 function calculateCartTotal(cartItems) {
-return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+// Calcular el subtotal de los productos
+const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+
+// Añadir costos de envío si están disponibles
+const shippingMethod = localStorage.getItem('shipping_method') || 'Envío Estándar';
+const shippingCost = shippingMethod === 'Envío Estándar' ? 4.99 : 9.99;
+
+// Añadir impuestos (0 por defecto)
+const taxes = 0;
+
+return subtotal + shippingCost + taxes;
 }
 
 function generateTransactionId() {
