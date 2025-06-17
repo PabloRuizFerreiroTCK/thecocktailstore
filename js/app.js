@@ -69,96 +69,97 @@ setupEventTracking() {
     });
   });
 
-  // 3. Rastrear clics en "Ver Detalles"
-  document.addEventListener('click', (e) => {
-    const detailsButton = e.target.closest('.product__button');
-    if (detailsButton) {
-      e.preventDefault(); // Prevenir comportamiento predeterminado
-      const productCard = detailsButton.closest('.product');
-      if (productCard) {
-        const productId = productCard.dataset.id;
-        const productName = productCard.querySelector('.product__title').textContent;
-        const productCategory = productCard.dataset.category;
-        const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
-        
-        // Guardar información del producto y lista en localStorage para usar en otras páginas
-        localStorage.setItem('last_viewed_product_id', productId);
-        localStorage.setItem('last_viewed_product_name', productName);
-        localStorage.setItem('last_viewed_product_category', productCategory);
-        localStorage.setItem('last_viewed_product_price', productPrice);
-        localStorage.setItem('last_list_id', this.currentListId);
-        localStorage.setItem('last_list_name', this.currentListName);
-        
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'select_item',
-          'item_list_id': this.currentListId,
-          'item_list_name': this.currentListName,
-          'items': [{
-            'item_id': productId,
-            'item_name': productName,
-            'item_category': productCategory,
-            'item_brand': 'TheCocktail',
-            'price': productPrice,
-            'currency': 'USD'
-          }]
-        });
-        console.log(`Evento select_item enviado: Ver Detalles de ${productName}`);
-        
-        // Redirigir después de enviar el evento
-        setTimeout(() => {
-          window.location.href = `product.html?id=${productId}`;
-        }, 100);
-      }
-    }
-  });
+  // Rastrear clics en "Ver Detalles"
+document.querySelectorAll('.product__button').forEach(button => {
+button.addEventListener('click', function(e) {
+  e.preventDefault(); // Prevenir comportamiento predeterminado
+  
+  const productCard = this.closest('.product');
+  if (productCard) {
+    const productId = productCard.dataset.id;
+    const productName = productCard.querySelector('.product__title').textContent;
+    const productCategory = productCard.dataset.category;
+    const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
+    
+    // Guardar información del producto y lista en localStorage para usar en otras páginas
+    localStorage.setItem('last_viewed_product_id', productId);
+    localStorage.setItem('last_viewed_product_name', productName);
+    localStorage.setItem('last_viewed_product_category', productCategory);
+    localStorage.setItem('last_viewed_product_price', productPrice);
+    localStorage.setItem('last_list_id', window.app.currentListId);
+    localStorage.setItem('last_list_name', window.app.currentListName);
+    
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'select_item',
+      'item_list_id': window.app.currentListId,
+      'item_list_name': window.app.currentListName,
+      'items': [{
+        'item_id': productId,
+        'item_name': productName,
+        'item_category': productCategory,
+        'item_brand': 'TheCocktail',
+        'price': productPrice,
+        'currency': 'USD'
+      }]
+    });
+    console.log(`Evento select_item enviado: Ver Detalles de ${productName}`);
+    
+    // Redirigir después de enviar el evento
+    setTimeout(() => {
+      window.location.href = `product.html?id=${productId}`;
+    }, 100);
+  }
+});
+});
 
-  // 4. Rastrear clics en "Añadir al Carrito" (icono azul)
-  document.addEventListener('click', (e) => {
-    const cartButton = e.target.closest('.product__cart');
-    if (cartButton) {
-      e.preventDefault(); // Prevenir comportamiento predeterminado
-      const productCard = cartButton.closest('.product');
-      if (productCard) {
-        const productId = productCard.dataset.id;
-        const productName = productCard.querySelector('.product__title').textContent;
-        const productCategory = productCard.dataset.category;
-        const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
-        const quantity = 1;
-        const value = productPrice * quantity;
-        
-        // Añadir el producto al carrito usando la instancia de cartUI
-        if (this.cartUI && typeof this.cartUI.addToCart === 'function') {
-          this.cartUI.addToCart({
-            id: productId,
-            name: productName,
-            category: productCategory,
-            price: productPrice,
-            quantity: quantity
-          });
-        }
-        
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'add_to_cart',
-          'item_list_id': this.currentListId,
-          'item_list_name': this.currentListName,
-          'currency': 'USD',
-          'value': value,
-          'taxes': 0,
-          'items': [{
-            'item_id': productId,
-            'item_name': productName,
-            'item_category': productCategory,
-            'item_brand': 'TheCocktail',
-            'price': productPrice,
-            'quantity': quantity
-          }]
-        });
-        console.log(`Evento add_to_cart enviado: ${productName} (icono azul)`);
-      }
+ // 4. Rastrear clics en "Añadir al Carrito" (icono azul)
+document.querySelectorAll('.product__cart').forEach(button => {
+button.addEventListener('click', (e) => {
+  e.preventDefault();
+  
+  const productCard = button.closest('.product');
+  if (productCard) {
+    const productId = productCard.dataset.id;
+    const productName = productCard.querySelector('.product__title').textContent;
+    const productCategory = productCard.dataset.category;
+    const productPrice = parseFloat(productCard.querySelector('.product__price').textContent.replace('$', ''));
+    const quantity = 1;
+    const value = productPrice * quantity;
+    
+    // Añadir el producto al carrito
+    if (this.cartUI && typeof this.cartUI.addToCart === 'function') {
+      this.cartUI.addToCart({
+        id: productId,
+        name: productName,
+        category: productCategory,
+        price: productPrice,
+        quantity: quantity
+      });
     }
-  });
+    
+    // Enviar el evento add_to_cart
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'add_to_cart',
+      'item_list_id': this.currentListId,
+      'item_list_name': this.currentListName,
+      'currency': 'USD',
+      'value': value,
+      'taxes': 0,
+      'items': [{
+        'item_id': productId,
+        'item_name': productName,
+        'item_category': productCategory,
+        'item_brand': 'TheCocktail',
+        'price': productPrice,
+        'quantity': quantity
+      }]
+    });
+    console.log(`Evento add_to_cart enviado: ${productName} (icono azul)`);
+  }
+});
+});
 
   // 5. Rastrear clics en el icono del carrito
   const cartIcon = document.querySelector('.nav__cart-icon');
