@@ -3,6 +3,9 @@ import { productsUI } from "./ui/productsUI.js";
 
 class App {
 constructor() {
+  // Aseguramos que dataLayer esté inicializado
+  window.dataLayer = window.dataLayer || [];
+  
   // Inicializamos el item_list_id y item_list_name
   this.currentItemListId = '1';
   this.currentItemListName = 'Todos';
@@ -119,8 +122,17 @@ setupEventTracking() {
 // Método para enviar eventos al dataLayer con log
 pushToDataLayer(eventData) {
   console.log('Enviando evento a dataLayer:', eventData);
+  
+  // Aseguramos que dataLayer esté inicializado
   window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(eventData);
+  
+  // Usamos el método push directamente
+  try {
+    window.dataLayer.push(eventData);
+    console.log('Evento enviado correctamente al dataLayer');
+  } catch (error) {
+    console.error('Error al enviar evento al dataLayer:', error);
+  }
 }
 
 // Método para actualizar el item_list_id y item_list_name según la categoría
@@ -168,80 +180,81 @@ getCurrentItemListName() {
   return storedName || this.currentItemListName || 'Todos';
 }
 
+// Método para extraer información de productos del DOM
+extractProductsFromDOM() {
+  const productElements = document.querySelectorAll('.product');
+  const items = [];
+  
+  productElements.forEach(product => {
+    const productId = product.dataset.id;
+    const productTitle = product.querySelector('.product__title')?.textContent;
+    const productCategory = product.dataset.category;
+    const productPriceText = product.querySelector('.product__price')?.textContent;
+    const productPrice = productPriceText ? parseFloat(productPriceText.replace('$', '').trim()) : 0;
+    
+    if (productId && productTitle) {
+      items.push({
+        item_id: productId,
+        item_name: productTitle,
+        item_category: productCategory || '',
+        item_brand: 'TheCocktail',
+        price: productPrice,
+        quantity: 1
+      });
+    }
+  });
+  
+  return items;
+}
+
+// Método para extraer información de un producto específico del DOM
+extractProductInfoFromElement(productElement) {
+  if (!productElement) return null;
+  
+  const productId = productElement.dataset.id;
+  const productTitle = productElement.querySelector('.product__title')?.textContent;
+  const productCategory = productElement.dataset.category;
+  const productPriceText = productElement.querySelector('.product__price')?.textContent;
+  const productPrice = productPriceText ? parseFloat(productPriceText.replace('$', '').trim()) : 0;
+  
+  if (productId && productTitle) {
+    return {
+      item_id: productId,
+      item_name: productTitle,
+      item_category: productCategory || '',
+      item_brand: 'TheCocktail',
+      price: productPrice,
+      quantity: 1
+    };
+  }
+  
+  return null;
+}
+
 // 1. Evento view_item_list al cargar la página
 trackViewItemList() {
   console.log('Configurando trackViewItemList');
   
-  // Disparamos el evento inmediatamente
-  this.sendViewItemListEvent();
-  
-  // También lo configuramos para cuando el DOM esté completamente cargado
+  // Esperamos a que el DOM esté completamente cargado
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded - Verificando productos');
-    const productElements = document.querySelectorAll('.product');
-    console.log(`Productos encontrados: ${productElements.length}`);
-    
-    if (productElements.length === 0) {
-      // Si aún no hay productos, esperamos un poco más
-      console.log('No se encontraron productos, esperando 500ms');
-      setTimeout(() => {
-        this.sendViewItemListEvent();
-      }, 500);
-    }
-  });
-}
-
-sendViewItemListEvent() {
-  console.log('Ejecutando sendViewItemListEvent');
-  const productElements = document.querySelectorAll('.product');
-  console.log(`Productos encontrados para view_item_list: ${productElements.length}`);
-  
-  const items = [];
-  
-  if (productElements.length > 0) {
-    productElements.forEach(product => {
-      const productId = product.dataset.id;
-      const productTitle = product.querySelector('.product__title')?.textContent;
-      const productCategory = product.dataset.category;
-      const productPrice = parseFloat(product.querySelector('.product__price')?.textContent.replace('$', '').trim());
+    setTimeout(() => {
+      const items = this.extractProductsFromDOM();
       
-      console.log(`Producto encontrado: ID=${productId}, Nombre=${productTitle}`);
-      
-      if (productId && productTitle) {
-        items.push({
-          item_id: productId,
-          item_name: productTitle,
-          item_category: productCategory || '',
-          item_brand: 'TheCocktail',
-          price: productPrice || 0,
-          quantity: 1
-        });
+      if (items.length > 0) {
+        const eventData = {
+          'event': 'view_item_list',
+          'item_list_id': this.getCurrentItemListId(),
+          'item_list_name': this.getCurrentItemListName(),
+          'currency': 'USD',
+          'items': items
+        };
+        
+        this.pushToDataLayer(eventData);
+      } else {
+        console.log('No se encontraron productos para view_item_list');
       }
-    });
-  } else {
-    // Si no hay productos en el DOM, usamos datos de ejemplo
-    console.log('No se encontraron productos, usando datos de ejemplo');
-    items.push({
-      item_id: '1',
-      item_name: 'NovaTech Phantom X9',
-      item_category: 'Laptop',
-      item_brand: 'TheCocktail',
-      price: 2499.99,
-      quantity: 1
-    });
-  }
-  
-  if (items.length > 0) {
-    const eventData = {
-      'event': 'view_item_list',
-      'item_list_id': this.getCurrentItemListId(),
-      'item_list_name': this.getCurrentItemListName(),
-      'currency': 'USD',
-      'items': items
-    };
-    
-    this.pushToDataLayer(eventData);
-  }
+    }, 500); // Damos tiempo para que se carguen los productos
+  });
 }
 
 // 2. Evento select_item al hacer clic en "Ver Productos"
@@ -257,40 +270,24 @@ trackViewProductsButton() {
       // Al hacer clic en "Ver Productos", volvemos a la lista "Todos"
       this.updateItemListInfo('all');
       
-      const productElements = document.querySelectorAll('.product');
-      const items = [];
-      
-      productElements.forEach(product => {
-        const productId = product.dataset.id;
-        const productTitle = product.querySelector('.product__title')?.textContent;
-        const productCategory = product.dataset.category;
-        const productPrice = parseFloat(product.querySelector('.product__price')?.textContent.replace('$', '').trim());
+      // Esperamos un momento para que se muestren los productos
+      setTimeout(() => {
+        const items = this.extractProductsFromDOM();
         
-        if (productId && productTitle) {
-          items.push({
-            item_id: productId,
-            item_name: productTitle,
-            item_category: productCategory || '',
-            item_brand: 'TheCocktail',
-            price: productPrice || 0,
-            quantity: 1
-          });
+        if (items.length > 0) {
+          const eventData = {
+            'event': 'select_item',
+            'item_list_id': this.getCurrentItemListId(),
+            'item_list_name': this.getCurrentItemListName(),
+            'currency': 'USD',
+            'items': items
+          };
+          
+          this.pushToDataLayer(eventData);
+        } else {
+          console.log('No se encontraron productos para select_item');
         }
-      });
-      
-      if (items.length > 0) {
-        const eventData = {
-          'event': 'select_item',
-          'item_list_id': this.getCurrentItemListId(),
-          'item_list_name': this.getCurrentItemListName(),
-          'currency': 'USD',
-          'items': items
-        };
-        
-        this.pushToDataLayer(eventData);
-      } else {
-        console.log('No se encontraron productos para select_item');
-      }
+      }, 100);
     });
   } else {
     console.log('Botón "Ver Productos" NO encontrado');
@@ -313,26 +310,14 @@ trackFilterButtons() {
       
       // Esperamos a que se aplique el filtro
       setTimeout(() => {
+        // Obtenemos solo los productos visibles después de aplicar el filtro
         const productElements = document.querySelectorAll('.product:not(.hidden)');
-        console.log(`Productos visibles después del filtro: ${productElements.length}`);
-        
         const items = [];
         
         productElements.forEach(product => {
-          const productId = product.dataset.id;
-          const productTitle = product.querySelector('.product__title')?.textContent;
-          const productCategory = product.dataset.category;
-          const productPrice = parseFloat(product.querySelector('.product__price')?.textContent.replace('$', '').trim());
-          
-          if (productId && productTitle) {
-            items.push({
-              item_id: productId,
-              item_name: productTitle,
-              item_category: productCategory || '',
-              item_brand: 'TheCocktail',
-              price: productPrice || 0,
-              quantity: 1
-            });
+          const productInfo = this.extractProductInfoFromElement(product);
+          if (productInfo) {
+            items.push(productInfo);
           }
         });
         
@@ -347,7 +332,7 @@ trackFilterButtons() {
           
           this.pushToDataLayer(eventData);
         } else {
-          console.log('No se encontraron productos para select_item después del filtro');
+          console.log('No se encontraron productos visibles después de aplicar el filtro');
         }
       }, 100);
     });
@@ -358,123 +343,59 @@ trackFilterButtons() {
 trackAddToCartButtons() {
   console.log('Configurando trackAddToCartButtons');
   
-  // Primero intentamos añadir listeners directamente a los botones existentes
-  const addToCartButtons = document.querySelectorAll('.button.product__button');
-  console.log(`Botones "Añadir al Carrito" encontrados: ${addToCartButtons.length}`);
-  
-  addToCartButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      console.log('Clic directo en "Añadir al Carrito"');
-      this.handleAddToCartClick(button);
-    });
-  });
-  
-  // También usamos delegación de eventos para capturar botones añadidos dinámicamente
+  // Usamos delegación de eventos para capturar todos los botones "Añadir al Carrito"
   document.addEventListener('click', (e) => {
+    // Verificamos si el clic fue en el botón o en su icono
     const addToCartButton = e.target.closest('.button.product__button');
     
-    if (addToCartButton && !e.target._processedByDirectListener) {
-      console.log('Clic delegado en "Añadir al Carrito"');
-      e.target._processedByDirectListener = true; // Evitar duplicados
-      this.handleAddToCartClick(addToCartButton);
+    if (addToCartButton) {
+      console.log('Clic en "Añadir al Carrito"');
+      
+      // Obtenemos el producto que se está añadiendo al carrito
+      const productElement = addToCartButton.closest('.product');
+      const productInfo = this.extractProductInfoFromElement(productElement);
+      
+      if (productInfo) {
+        const eventData = {
+          'event': 'add_to_cart',
+          'currency': 'USD',
+          'item_list_id': this.getCurrentItemListId(),
+          'items': [productInfo]
+        };
+        
+        this.pushToDataLayer(eventData);
+      } else {
+        console.log('No se pudo obtener información del producto para add_to_cart');
+      }
     }
   });
-}
-
-handleAddToCartClick(button) {
-  // Obtenemos el producto que se está añadiendo al carrito
-  const productElement = button.closest('.product');
-  if (productElement) {
-    const productId = productElement.dataset.id;
-    const productTitle = productElement.querySelector('.product__title')?.textContent;
-    const productCategory = productElement.dataset.category;
-    const productPrice = parseFloat(productElement.querySelector('.product__price')?.textContent.replace('$', '').trim());
-    
-    console.log(`Producto para add_to_cart: ID=${productId}, Nombre=${productTitle}`);
-    
-    if (productId && productTitle) {
-      const eventData = {
-        'event': 'add_to_cart',
-        'currency': 'USD',
-        'item_list_id': this.getCurrentItemListId(),
-        'items': [{
-          'item_id': productId,
-          'item_name': productTitle,
-          'item_category': productCategory || '',
-          'item_brand': 'TheCocktail',
-          'price': productPrice || 0,
-          'quantity': 1
-        }]
-      };
-      
-      this.pushToDataLayer(eventData);
-    } else {
-      console.log('No se pudo obtener información del producto para add_to_cart');
-    }
-  } else {
-    console.log('No se encontró el elemento del producto para add_to_cart');
-  }
 }
 
 // 5. Evento view_cart_icon_click al hacer clic en el icono del carrito
 trackCartIconClick() {
   console.log('Configurando trackCartIconClick');
-  const cartIcon = document.querySelector('.nav__cart-icon');
-  const cartContainer = document.querySelector('.nav__cart');
   
-  if (cartIcon) {
-    console.log('Icono de carrito encontrado');
-    cartIcon.addEventListener('click', () => {
-      console.log('Clic en icono de carrito');
-      this.handleCartIconClick();
-    });
-  } else {
-    console.log('Icono de carrito NO encontrado');
-  }
-  
-  if (cartContainer) {
-    console.log('Contenedor de carrito encontrado');
-    cartContainer.addEventListener('click', (e) => {
-      // Solo disparamos si el clic fue en el contenedor, no en el icono (para evitar duplicados)
-      if (e.target === cartContainer) {
-        console.log('Clic en contenedor de carrito');
-        this.handleCartIconClick();
-      }
-    });
-  }
-  
-  // También usamos delegación para mayor seguridad
   document.addEventListener('click', (e) => {
-    if ((e.target.classList.contains('nav__cart-icon') || 
-         e.target.closest('.nav__cart')) && 
-        !e.target._processedByDirectListener) {
-      console.log('Clic delegado en icono/contenedor de carrito');
-      e.target._processedByDirectListener = true; // Evitar duplicados
-      this.handleCartIconClick();
+    if (e.target.classList.contains('nav__cart-icon') || 
+        e.target.closest('.nav__cart')) {
+      console.log('Clic en icono de carrito');
+      
+      // Esperamos a que se abra el modal del carrito
+      setTimeout(() => {
+        // Obtenemos los productos del carrito desde el modal
+        const cartItems = this.getCartItemsFromModal();
+        
+        const eventData = {
+          'event': 'view_cart_icon_click',
+          'item_list_id': this.getCurrentItemListId(),
+          'currency': 'USD',
+          'items': cartItems
+        };
+        
+        this.pushToDataLayer(eventData);
+      }, 100);
     }
   });
-}
-
-handleCartIconClick() {
-  // Obtenemos los productos del carrito
-  const cartItems = this.getCartItems();
-  console.log(`Productos en el carrito: ${cartItems.length}`);
-  
-  const eventData = {
-    'event': 'view_cart_icon_click',
-    'item_list_id': this.getCurrentItemListId(),
-    'currency': 'USD',
-    'items': cartItems.length > 0 ? cartItems : [{
-      'item_id': '1',
-      'item_name': 'NovaTech Phantom X9',
-      'item_category': 'Laptop',
-      'item_brand': 'TheCocktail',
-      'price': 2499.99,
-      'quantity': 1
-    }]
-  };
-  
-  this.pushToDataLayer(eventData);
 }
 
 // 6. Evento view_cart_click al hacer clic en "Ver Carrito"
@@ -487,22 +408,14 @@ trackViewCartButton() {
     if (viewCartButton) {
       console.log('Clic en "Ver Carrito"');
       
-      // Obtenemos los productos del carrito
-      const cartItems = this.getCartItems();
-      console.log(`Productos en el carrito para view_cart_click: ${cartItems.length}`);
+      // Obtenemos los productos del carrito desde el modal
+      const cartItems = this.getCartItemsFromModal();
       
       const eventData = {
         'event': 'view_cart_click',
         'item_list_id': this.getCurrentItemListId(),
         'currency': 'USD',
-        'items': cartItems.length > 0 ? cartItems : [{
-          'item_id': '1',
-          'item_name': 'NovaTech Phantom X9',
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
+        'items': cartItems
       };
       
       this.pushToDataLayer(eventData);
@@ -520,9 +433,8 @@ trackProceedToCheckoutButton() {
     if (checkoutButton) {
       console.log('Clic en "Proceder al Pago"');
       
-      // Obtenemos los productos del carrito
-      const cartItems = this.getCartItems();
-      console.log(`Productos en el carrito para begin_checkout: ${cartItems.length}`);
+      // Obtenemos los productos del carrito desde el modal
+      const cartItems = this.getCartItemsFromModal();
       
       // Verificamos si hay un cupón aplicado
       const hasCoupon = this.hasCouponApplied();
@@ -535,14 +447,7 @@ trackProceedToCheckoutButton() {
         'currency': 'USD',
         'has_coupon': hasCoupon,
         'coupon': couponCode,
-        'items': cartItems.length > 0 ? cartItems : [{
-          'item_id': '1',
-          'item_name': 'NovaTech Phantom X9',
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
+        'items': cartItems
       };
       
       this.pushToDataLayer(eventData);
@@ -568,24 +473,25 @@ trackCartQuantityButtons() {
         const productId = cartItem.dataset.id;
         const productName = cartItem.querySelector('.cart-modal__item-name')?.textContent;
         const productCategory = cartItem.dataset.category;
-        const productPrice = parseFloat(cartItem.querySelector('.cart-modal__item-price')?.textContent.replace('$', '').trim());
-        
-        console.log(`Producto para ${action}: ID=${productId}, Nombre=${productName}`);
+        const productPriceText = cartItem.querySelector('.cart-modal__item-price')?.textContent;
+        const productPrice = productPriceText ? parseFloat(productPriceText.replace('$', '').trim()) : 0;
         
         if (productId && productName) {
+          const productInfo = {
+            item_id: productId,
+            item_name: productName,
+            item_category: productCategory || '',
+            item_brand: 'TheCocktail',
+            price: productPrice,
+            quantity: 1
+          };
+          
           if (action === 'increase') {
             const eventData = {
               'event': 'add_to_cart',
               'currency': 'USD',
               'item_list_id': this.getCurrentItemListId(),
-              'items': [{
-                'item_id': productId,
-                'item_name': productName,
-                'item_category': productCategory || '',
-                'item_brand': 'TheCocktail',
-                'price': productPrice || 0,
-                'quantity': 1
-              }]
+              'items': [productInfo]
             };
             
             this.pushToDataLayer(eventData);
@@ -594,14 +500,7 @@ trackCartQuantityButtons() {
               'event': 'remove_from_cart',
               'currency': 'USD',
               'item_list_id': this.getCurrentItemListId(),
-              'items': [{
-                'item_id': productId,
-                'item_name': productName,
-                'item_category': productCategory || '',
-                'item_brand': 'TheCocktail',
-                'price': productPrice || 0,
-                'quantity': 1
-              }]
+              'items': [productInfo]
             };
             
             this.pushToDataLayer(eventData);
@@ -641,14 +540,7 @@ trackSocialShareButtons() {
       const eventData = {
         'event': 'social_share',
         'social_network': socialNetwork,
-        'items': featuredProduct ? [featuredProduct] : [{
-          'item_id': '1',
-          'item_name': 'NovaTech Phantom X9',
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
+        'items': featuredProduct ? [featuredProduct] : []
       };
       
       this.pushToDataLayer(eventData);
@@ -656,121 +548,68 @@ trackSocialShareButtons() {
   });
 }
 
-// Método para obtener los productos del carrito
-getCartItems() {
-  console.log('Obteniendo productos del carrito');
-  
-  // Intentamos obtener los productos del carrito desde el localStorage
-  try {
-    const cartData = localStorage.getItem('cart');
-    if (cartData) {
-      console.log('Carrito encontrado en localStorage');
-      const cart = JSON.parse(cartData);
-      return cart.items.map(item => ({
-        item_id: item.id,
-        item_name: item.name,
-        item_category: item.category || '',
-        item_brand: 'TheCocktail',
-        price: item.price || 0,
-        quantity: item.quantity || 1
-      }));
-    }
-  } catch (e) {
-    console.error('Error al obtener productos del carrito:', e);
-  }
-  
-  // Si no podemos obtener los productos del localStorage, intentamos obtenerlos del DOM
+// Método para obtener los productos del carrito desde el modal
+getCartItemsFromModal() {
   const cartItems = document.querySelectorAll('.cart-modal__item');
+  const items = [];
+  
   if (cartItems.length > 0) {
-    console.log(`Productos del carrito encontrados en el DOM: ${cartItems.length}`);
-    return Array.from(cartItems).map(item => {
+    cartItems.forEach(item => {
       const productId = item.dataset.id;
       const productName = item.querySelector('.cart-modal__item-name')?.textContent;
       const productCategory = item.dataset.category;
-      const productPrice = parseFloat(item.querySelector('.cart-modal__item-price')?.textContent.replace('$', '').trim());
-      const quantity = parseInt(item.querySelector('.cart-modal__item-quantity')?.textContent || '1');
+      const productPriceText = item.querySelector('.cart-modal__item-price')?.textContent;
+      const productPrice = productPriceText ? parseFloat(productPriceText.replace('$', '').trim()) : 0;
+      const quantityText = item.querySelector('.cart-modal__item-quantity')?.textContent;
+      const quantity = quantityText ? parseInt(quantityText) : 1;
       
-      return {
-        item_id: productId || '',
-        item_name: productName || '',
-        item_category: productCategory || '',
-        item_brand: 'TheCocktail',
-        price: productPrice || 0,
-        quantity: quantity || 1
-      };
+      if (productId && productName) {
+        items.push({
+          item_id: productId,
+          item_name: productName,
+          item_category: productCategory || '',
+          item_brand: 'TheCocktail',
+          price: productPrice,
+          quantity: quantity
+        });
+      }
     });
   }
   
-  // Si no hay productos en el carrito, devolvemos un array vacío
-  console.log('No se encontraron productos en el carrito');
-  return [];
+  return items;
 }
 
 // Método para verificar si hay un cupón aplicado
 hasCouponApplied() {
-  try {
-    const cartData = localStorage.getItem('cart');
-    if (cartData) {
-      const cart = JSON.parse(cartData);
-      return !!cart.coupon;
-    }
-  } catch (e) {
-    console.error('Error al verificar cupón:', e);
-  }
-  return false;
+  // Buscar algún elemento en el DOM que indique que hay un cupón aplicado
+  const couponElement = document.querySelector('.cart-modal__coupon') || document.querySelector('.coupon-applied');
+  return !!couponElement;
 }
 
 // Método para obtener el código del cupón
 getCouponCode() {
-  try {
-    const cartData = localStorage.getItem('cart');
-    if (cartData) {
-      const cart = JSON.parse(cartData);
-      return cart.coupon || '';
-    }
-  } catch (e) {
-    console.error('Error al obtener código de cupón:', e);
-  }
-  return '';
+  // Buscar el código del cupón en el DOM
+  const couponElement = document.querySelector('.cart-modal__coupon-code') || document.querySelector('.coupon-code');
+  return couponElement ? couponElement.textContent.trim() : '';
 }
 
 // Método para obtener el producto destacado
 getFeaturedProduct() {
-  console.log('Obteniendo producto destacado');
-  
   // Intentamos obtener el primer producto visible
   const featuredProduct = document.querySelector('.product');
   if (featuredProduct) {
-    const productId = featuredProduct.dataset.id;
-    const productTitle = featuredProduct.querySelector('.product__title')?.textContent;
-    const productCategory = featuredProduct.dataset.category;
-    const productPrice = parseFloat(featuredProduct.querySelector('.product__price')?.textContent.replace('$', '').trim());
-    
-    console.log(`Producto destacado encontrado: ID=${productId}, Nombre=${productTitle}`);
-    
-    if (productId && productTitle) {
-      return {
-        item_id: productId,
-        item_name: productTitle,
-        item_category: productCategory || '',
-        item_brand: 'TheCocktail',
-        price: productPrice || 0,
-        quantity: 1
-      };
-    }
+    return this.extractProductInfoFromElement(featuredProduct);
   }
   
   // Si no hay productos visibles, intentamos obtener uno del carrito
-  const cartItems = this.getCartItems();
-  if (cartItems.length > 0) {
-    console.log('Usando primer producto del carrito como destacado');
-    return cartItems[0];
-  }
-  
-  console.log('No se encontró producto destacado');
-  return null;
+  const cartItems = this.getCartItemsFromModal();
+  return cartItems.length > 0 ? cartItems[0] : null;
 }
 }
+
+// Aseguramos que dataLayer esté inicializado antes de cualquier otra cosa
+window.dataLayer = window.dataLayer || [];
+console.log('dataLayer inicializado:', window.dataLayer);
 
 document.addEventListener("DOMContentLoaded", () => {
 console.log('DOMContentLoaded - Inicializando App');
