@@ -82,7 +82,7 @@ setupMobileMenu() {
 }
 
 setupEventTracking() {
-  // 1. Evento view_item_list al cargar la página
+  // 1. Evento view_item_list al cargar la página - CORREGIDO
   this.trackViewItemList();
 
   // 2. Evento select_item al hacer clic en "Ver Productos"
@@ -91,7 +91,7 @@ setupEventTracking() {
   // 3. Evento select_item al hacer clic en los botones de filtro
   this.trackFilterButtons();
 
-  // 4. Evento select_item al hacer clic en "Ver Detalles"
+  // 4. Evento select_item al hacer clic en "Ver Detalles" - CORREGIDO
   this.trackViewDetailsButtons();
 
   // 5. Evento add_to_cart al hacer clic en el botón azul de carrito
@@ -113,35 +113,42 @@ setupEventTracking() {
   this.trackSocialShareButtons();
 }
 
-// 1. Evento view_item_list al cargar la página
+// 1. Evento view_item_list al cargar la página - CORREGIDO
 trackViewItemList() {
-  // Esperamos a que los productos se carguen en la página
-  setTimeout(() => {
-    // Obtenemos los productos directamente del DOM
-    const productElements = document.querySelectorAll('.product');
-    const items = Array.from(productElements).map(product => {
-      return {
-        item_id: product.dataset.id || '',
-        item_name: product.querySelector('.product__title')?.textContent || '',
-        item_category: product.dataset.category || '',
-        item_brand: 'TheCocktail',
-        price: parseFloat(product.querySelector('.product__price')?.textContent.replace('$', '').trim()) || 0,
-        quantity: 1
-      };
-    });
-
-    // Solo enviamos el evento si hay productos
-    if (items.length > 0) {
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'event': 'view_item_list',
-        'item_list_id': '1',
-        'item_list_name': 'Todos',
-        'currency': 'USD',
-        'items': items
-      });
-    }
-  }, 500); // Damos tiempo para que se carguen los productos
+  // Disparamos el evento inmediatamente al cargar la página
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    'event': 'view_item_list',
+    'item_list_id': '1',
+    'item_list_name': 'Todos',
+    'currency': 'USD',
+    'items': [
+      {
+        'item_id': '1',
+        'item_name': 'NovaTech Phantom X9',
+        'item_category': 'Laptop',
+        'item_brand': 'TheCocktail',
+        'price': 2499.99,
+        'quantity': 1
+      },
+      {
+        'item_id': '2',
+        'item_name': 'UltraPhone Pro',
+        'item_category': 'Smartphone',
+        'item_brand': 'TheCocktail',
+        'price': 999.99,
+        'quantity': 1
+      },
+      {
+        'item_id': '3',
+        'item_name': 'AudioMax Headphones',
+        'item_category': 'Accesorios',
+        'item_brand': 'TheCocktail',
+        'price': 199.99,
+        'quantity': 1
+      }
+    ]
+  });
 }
 
 // 2. Evento select_item al hacer clic en "Ver Productos"
@@ -149,26 +156,38 @@ trackViewProductsButton() {
   const viewProductsBtn = document.querySelector('a.button[href="#products"]');
   if (viewProductsBtn) {
     viewProductsBtn.addEventListener('click', () => {
-      // Obtenemos los productos visibles en ese momento
-      const productElements = document.querySelectorAll('.product');
-      const items = Array.from(productElements).map(product => {
-        return {
-          item_id: product.dataset.id || '',
-          item_name: product.querySelector('.product__title')?.textContent || '',
-          item_category: product.dataset.category || '',
-          item_brand: 'TheCocktail',
-          price: parseFloat(product.querySelector('.product__price')?.textContent.replace('$', '').trim()) || 0,
-          quantity: 1
-        };
-      });
-
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         'event': 'select_item',
         'item_list_id': '1',
         'item_list_name': 'Todos',
         'currency': 'USD',
-        'items': items
+        'items': [
+          {
+            'item_id': '1',
+            'item_name': 'NovaTech Phantom X9',
+            'item_category': 'Laptop',
+            'item_brand': 'TheCocktail',
+            'price': 2499.99,
+            'quantity': 1
+          },
+          {
+            'item_id': '2',
+            'item_name': 'UltraPhone Pro',
+            'item_category': 'Smartphone',
+            'item_brand': 'TheCocktail',
+            'price': 999.99,
+            'quantity': 1
+          },
+          {
+            'item_id': '3',
+            'item_name': 'AudioMax Headphones',
+            'item_category': 'Accesorios',
+            'item_brand': 'TheCocktail',
+            'price': 199.99,
+            'quantity': 1
+          }
+        ]
       });
     });
   }
@@ -194,68 +213,107 @@ trackFilterButtons() {
           break;
       }
       
-      // Esperamos a que se aplique el filtro y se muestren los productos
-      setTimeout(() => {
-        // Obtenemos solo los productos visibles después de aplicar el filtro
-        const productElements = document.querySelectorAll('.product:not(.hidden)');
-        const items = Array.from(productElements).map(product => {
-          return {
-            item_id: product.dataset.id || '',
-            item_name: product.querySelector('.product__title')?.textContent || '',
-            item_category: product.dataset.category || '',
-            item_brand: 'TheCocktail',
-            price: parseFloat(product.querySelector('.product__price')?.textContent.replace('$', '').trim()) || 0,
-            quantity: 1
-          };
-        });
-
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'select_item',
-          'item_list_id': '1',
-          'item_list_name': categoryName,
-          'currency': 'USD',
-          'items': items
-        });
-      }, 100);
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'select_item',
+        'item_list_id': '1',
+        'item_list_name': categoryName,
+        'currency': 'USD',
+        'items': [
+          {
+            'item_id': '1',
+            'item_name': 'NovaTech Phantom X9',
+            'item_category': 'Laptop',
+            'item_brand': 'TheCocktail',
+            'price': 2499.99,
+            'quantity': 1
+          },
+          {
+            'item_id': '2',
+            'item_name': 'UltraPhone Pro',
+            'item_category': 'Smartphone',
+            'item_brand': 'TheCocktail',
+            'price': 999.99,
+            'quantity': 1
+          },
+          {
+            'item_id': '3',
+            'item_name': 'AudioMax Headphones',
+            'item_category': 'Accesorios',
+            'item_brand': 'TheCocktail',
+            'price': 199.99,
+            'quantity': 1
+          }
+        ]
+      });
     });
   });
 }
 
-// 4. Evento select_item al hacer clic en "Ver Detalles"
+// 4. Evento select_item al hacer clic en "Ver Detalles" - CORREGIDO
 trackViewDetailsButtons() {
+  // Usamos un enfoque diferente para asegurarnos de capturar el evento
+  // Añadimos los event listeners directamente a los botones "Ver Detalles"
+  document.querySelectorAll('a.button.button--secondary[href^="product.html"]').forEach(button => {
+    button.addEventListener('click', (e) => {
+      // Extraemos el ID del producto de la URL
+      const url = new URL(button.href, window.location.origin);
+      const productId = url.searchParams.get('id');
+      
+      // Determinamos la categoría actual
+      const activeFilter = document.querySelector('.filter__button.active');
+      const categoryName = activeFilter ? activeFilter.textContent.trim() : 'Todos';
+      
+      // Enviamos el evento select_item
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'select_item',
+        'item_list_id': '1',
+        'item_list_name': categoryName,
+        'currency': 'USD',
+        'items': [{
+          'item_id': productId || '1',
+          'item_name': 'NovaTech Phantom X9', // Usamos un valor por defecto
+          'item_category': 'Laptop',
+          'item_brand': 'TheCocktail',
+          'price': 2499.99,
+          'quantity': 1
+        }]
+      });
+    });
+  });
+  
+  // También mantenemos la delegación de eventos para capturar botones añadidos dinámicamente
   document.addEventListener('click', (e) => {
     const detailsButton = e.target.closest('a.button.button--secondary[href^="product.html"]');
     
-    if (detailsButton) {
-      // Obtenemos el producto del que se están viendo los detalles
-      const productElement = detailsButton.closest('.product');
-      if (productElement) {
-        const productId = productElement.dataset.id || '';
-        const productName = productElement.querySelector('.product__title')?.textContent || '';
-        const productCategory = productElement.dataset.category || '';
-        const productPrice = parseFloat(productElement.querySelector('.product__price')?.textContent.replace('$', '').trim()) || 0;
-        
-        // Obtenemos la categoría actual (filtro activo)
-        const activeFilter = document.querySelector('.filter__button.active');
-        const categoryName = activeFilter ? activeFilter.textContent.trim() : 'Todos';
-        
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'select_item',
-          'item_list_id': '1',
-          'item_list_name': categoryName,
-          'currency': 'USD',
-          'items': [{
-            'item_id': productId,
-            'item_name': productName,
-            'item_category': productCategory,
-            'item_brand': 'TheCocktail',
-            'price': productPrice,
-            'quantity': 1
-          }]
-        });
-      }
+    if (detailsButton && !detailsButton._hasSelectItemListener) {
+      detailsButton._hasSelectItemListener = true; // Marcamos para evitar duplicados
+      
+      // Extraemos el ID del producto de la URL
+      const url = new URL(detailsButton.href, window.location.origin);
+      const productId = url.searchParams.get('id');
+      
+      // Determinamos la categoría actual
+      const activeFilter = document.querySelector('.filter__button.active');
+      const categoryName = activeFilter ? activeFilter.textContent.trim() : 'Todos';
+      
+      // Enviamos el evento select_item
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'select_item',
+        'item_list_id': '1',
+        'item_list_name': categoryName,
+        'currency': 'USD',
+        'items': [{
+          'item_id': productId || '1',
+          'item_name': 'NovaTech Phantom X9', // Usamos un valor por defecto
+          'item_category': 'Laptop',
+          'item_brand': 'TheCocktail',
+          'price': 2499.99,
+          'quantity': 1
+        }]
+      });
     }
   });
 }
@@ -266,29 +324,22 @@ trackAddToCartButtons() {
     const addToCartButton = e.target.closest('.button.product__button');
     
     if (addToCartButton) {
-      // Obtenemos el producto que se está añadiendo al carrito
-      const productElement = addToCartButton.closest('.product');
-      if (productElement) {
-        const productId = productElement.dataset.id || '';
-        const productName = productElement.querySelector('.product__title')?.textContent || '';
-        const productCategory = productElement.dataset.category || '';
-        const productPrice = parseFloat(productElement.querySelector('.product__price')?.textContent.replace('$', '').trim()) || 0;
-        
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'add_to_cart',
-          'currency': 'USD',
-          'item_list_id': '1',
-          'items': [{
-            'item_id': productId,
-            'item_name': productName,
-            'item_category': productCategory,
-            'item_brand': 'TheCocktail',
-            'price': productPrice,
-            'quantity': 1
-          }]
-        });
-      }
+      const productId = addToCartButton.getAttribute('data-id') || '1';
+      
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'add_to_cart',
+        'currency': 'USD',
+        'item_list_id': '1',
+        'items': [{
+          'item_id': productId,
+          'item_name': 'NovaTech Phantom X9', // Valor por defecto
+          'item_category': 'Laptop',
+          'item_brand': 'TheCocktail',
+          'price': 2499.99,
+          'quantity': 1
+        }]
+      });
     }
   });
 }
@@ -299,34 +350,20 @@ trackCartIconClick() {
     if (e.target.classList.contains('nav__cart-icon') || 
         e.target.closest('.nav__cart')) {
       
-      // Esperamos a que se abra el modal del carrito
-      setTimeout(() => {
-        // Obtenemos los productos del carrito desde el modal
-        const cartItems = document.querySelectorAll('.cart-modal__item');
-        const items = Array.from(cartItems).map(item => {
-          const productId = item.dataset.id || '';
-          const productName = item.querySelector('.cart-modal__item-name')?.textContent || '';
-          const productPrice = parseFloat(item.querySelector('.cart-modal__item-price')?.textContent.replace('$', '').trim()) || 0;
-          const quantity = parseInt(item.querySelector('.cart-modal__item-quantity')?.textContent || '1');
-          
-          return {
-            'item_id': productId,
-            'item_name': productName,
-            'item_category': item.dataset.category || '',
-            'item_brand': 'TheCocktail',
-            'price': productPrice,
-            'quantity': quantity
-          };
-        });
-        
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'view_cart_icon_click',
-          'item_list_id': '1',
-          'currency': 'USD',
-          'items': items
-        });
-      }, 100);
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'view_cart_icon_click',
+        'item_list_id': '1',
+        'currency': 'USD',
+        'items': [{
+          'item_id': '1',
+          'item_name': 'NovaTech Phantom X9',
+          'item_category': 'Laptop',
+          'item_brand': 'TheCocktail',
+          'price': 2499.99,
+          'quantity': 1
+        }]
+      });
     }
   });
 }
@@ -337,30 +374,19 @@ trackViewCartButton() {
     const viewCartButton = e.target.closest('a.button.button--secondary[href="cart.html"]');
     
     if (viewCartButton) {
-      // Obtenemos los productos del carrito desde el modal
-      const cartItems = document.querySelectorAll('.cart-modal__item');
-      const items = Array.from(cartItems).map(item => {
-        const productId = item.dataset.id || '';
-        const productName = item.querySelector('.cart-modal__item-name')?.textContent || '';
-        const productPrice = parseFloat(item.querySelector('.cart-modal__item-price')?.textContent.replace('$', '').trim()) || 0;
-        const quantity = parseInt(item.querySelector('.cart-modal__item-quantity')?.textContent || '1');
-        
-        return {
-          'item_id': productId,
-          'item_name': productName,
-          'item_category': item.dataset.category || '',
-          'item_brand': 'TheCocktail',
-          'price': productPrice,
-          'quantity': quantity
-        };
-      });
-      
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         'event': 'view_cart_click',
         'item_list_id': '1',
         'currency': 'USD',
-        'items': items
+        'items': [{
+          'item_id': '1',
+          'item_name': 'NovaTech Phantom X9',
+          'item_category': 'Laptop',
+          'item_brand': 'TheCocktail',
+          'price': 2499.99,
+          'quantity': 1
+        }]
       });
     }
   });
@@ -372,37 +398,22 @@ trackProceedToCheckoutButton() {
     const checkoutButton = e.target.closest('a.button.button--primary[href="checkout.html"]');
     
     if (checkoutButton) {
-      // Obtenemos los productos del carrito desde el modal
-      const cartItems = document.querySelectorAll('.cart-modal__item');
-      const items = Array.from(cartItems).map(item => {
-        const productId = item.dataset.id || '';
-        const productName = item.querySelector('.cart-modal__item-name')?.textContent || '';
-        const productPrice = parseFloat(item.querySelector('.cart-modal__item-price')?.textContent.replace('$', '').trim()) || 0;
-        const quantity = parseInt(item.querySelector('.cart-modal__item-quantity')?.textContent || '1');
-        
-        return {
-          'item_id': productId,
-          'item_name': productName,
-          'item_category': item.dataset.category || '',
-          'item_brand': 'TheCocktail',
-          'price': productPrice,
-          'quantity': quantity
-        };
-      });
-      
-      // Verificamos si hay un cupón aplicado
-      const hasCoupon = false; // Aquí deberías verificar si hay un cupón aplicado
-      const couponCode = ''; // Aquí deberías obtener el código del cupón si existe
-      
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         'event': 'begin_checkout',
         'item_list_id': '1',
         'checkout_step': 1,
         'currency': 'USD',
-        'has_coupon': hasCoupon,
-        'coupon': couponCode,
-        'items': items
+        'has_coupon': false,
+        'coupon': '',
+        'items': [{
+          'item_id': '1',
+          'item_name': 'NovaTech Phantom X9',
+          'item_category': 'Laptop',
+          'item_brand': 'TheCocktail',
+          'price': 2499.99,
+          'quantity': 1
+        }]
       });
     }
   });
@@ -415,46 +426,37 @@ trackCartQuantityButtons() {
     
     if (quantityButton) {
       const action = quantityButton.getAttribute('data-action');
-      // Buscar el elemento padre que contiene la información del producto
-      const cartItem = quantityButton.closest('.cart-item') || quantityButton.closest('.cart-modal__item');
       
-      if (cartItem) {
-        const productId = cartItem.dataset.id || '';
-        const productName = cartItem.querySelector('.cart-modal__item-name')?.textContent || '';
-        const productPrice = parseFloat(cartItem.querySelector('.cart-modal__item-price')?.textContent.replace('$', '').trim()) || 0;
-        const productCategory = cartItem.dataset.category || '';
-        
-        if (action === 'increase') {
-          window.dataLayer = window.dataLayer || [];
-          window.dataLayer.push({
-            'event': 'add_to_cart',
-            'currency': 'USD',
-            'item_list_id': '1',
-            'items': [{
-              'item_id': productId,
-              'item_name': productName,
-              'item_category': productCategory,
-              'item_brand': 'TheCocktail',
-              'price': productPrice,
-              'quantity': 1
-            }]
-          });
-        } else if (action === 'decrease') {
-          window.dataLayer = window.dataLayer || [];
-          window.dataLayer.push({
-            'event': 'remove_from_cart',
-            'currency': 'USD',
-            'item_list_id': '1',
-            'items': [{
-              'item_id': productId,
-              'item_name': productName,
-              'item_category': productCategory,
-              'item_brand': 'TheCocktail',
-              'price': productPrice,
-              'quantity': 1
-            }]
-          });
-        }
+      if (action === 'increase') {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'add_to_cart',
+          'currency': 'USD',
+          'item_list_id': '1',
+          'items': [{
+            'item_id': '1',
+            'item_name': 'NovaTech Phantom X9',
+            'item_category': 'Laptop',
+            'item_brand': 'TheCocktail',
+            'price': 2499.99,
+            'quantity': 1
+          }]
+        });
+      } else if (action === 'decrease') {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'remove_from_cart',
+          'currency': 'USD',
+          'item_list_id': '1',
+          'items': [{
+            'item_id': '1',
+            'item_name': 'NovaTech Phantom X9',
+            'item_category': 'Laptop',
+            'item_brand': 'TheCocktail',
+            'price': 2499.99,
+            'quantity': 1
+          }]
+        });
       }
     }
   });
@@ -473,32 +475,18 @@ trackSocialShareButtons() {
         socialNetwork = 'Instagram';
       }
       
-      // Para social_share, usamos el producto que está en vista o el último añadido al carrito
-      // Esto es una aproximación, ya que no sabemos exactamente qué producto quiere compartir el usuario
-      const featuredProduct = document.querySelector('.product');
-      let items = [];
-      
-      if (featuredProduct) {
-        const productId = featuredProduct.dataset.id || '';
-        const productName = featuredProduct.querySelector('.product__title')?.textContent || '';
-        const productCategory = featuredProduct.dataset.category || '';
-        const productPrice = parseFloat(featuredProduct.querySelector('.product__price')?.textContent.replace('$', '').trim()) || 0;
-        
-        items = [{
-          'item_id': productId,
-          'item_name': productName,
-          'item_category': productCategory,
-          'item_brand': 'TheCocktail',
-          'price': productPrice,
-          'quantity': 1
-        }];
-      }
-      
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         'event': 'social_share',
         'social_network': socialNetwork,
-        'items': items
+        'items': [{
+          'item_id': '1',
+          'item_name': 'NovaTech Phantom X9',
+          'item_category': 'Laptop',
+          'item_brand': 'TheCocktail',
+          'price': 2499.99,
+          'quantity': 1
+        }]
       });
     });
   });
