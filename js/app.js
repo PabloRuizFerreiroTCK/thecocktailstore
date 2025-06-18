@@ -3,6 +3,10 @@ import { productsUI } from "./ui/productsUI.js";
 
 class App {
 constructor() {
+  // Inicializamos el item_list_id y item_list_name
+  this.currentItemListId = '1';
+  this.currentItemListName = 'Todos';
+  
   this.initializeApp();
 }
 
@@ -82,7 +86,7 @@ setupMobileMenu() {
 }
 
 setupEventTracking() {
-  // 1. Evento view_item_list al cargar la página - CORREGIDO
+  // 1. Evento view_item_list al cargar la página
   this.trackViewItemList();
 
   // 2. Evento select_item al hacer clic en "Ver Productos"
@@ -91,64 +95,117 @@ setupEventTracking() {
   // 3. Evento select_item al hacer clic en los botones de filtro
   this.trackFilterButtons();
 
-  // 4. Evento select_item al hacer clic en "Ver Detalles" - CORREGIDO
-  this.trackViewDetailsButtons();
-
-  // 5. Evento add_to_cart al hacer clic en el botón azul de carrito
+  // 4. Evento add_to_cart al hacer clic en el botón azul de carrito
   this.trackAddToCartButtons();
 
-  // 6. Evento view_cart_icon_click al hacer clic en el icono del carrito
+  // 5. Evento view_cart_icon_click al hacer clic en el icono del carrito
   this.trackCartIconClick();
 
-  // 7. Evento view_cart_click al hacer clic en "Ver Carrito"
+  // 6. Evento view_cart_click al hacer clic en "Ver Carrito"
   this.trackViewCartButton();
 
-  // 8. Evento begin_checkout al hacer clic en "Proceder al Pago"
+  // 7. Evento begin_checkout al hacer clic en "Proceder al Pago"
   this.trackProceedToCheckoutButton();
 
-  // 9. Eventos add_to_cart y remove_from_cart para los botones + y -
+  // 8. Eventos add_to_cart y remove_from_cart para los botones + y -
   this.trackCartQuantityButtons();
 
-  // 10. Evento social_share al hacer clic en los iconos de redes sociales
+  // 9. Evento social_share al hacer clic en los iconos de redes sociales
   this.trackSocialShareButtons();
 }
 
-// 1. Evento view_item_list al cargar la página - CORREGIDO
+// Método para actualizar el item_list_id y item_list_name según la categoría
+updateItemListInfo(category) {
+  switch(category) {
+    case 'all':
+      this.currentItemListId = '1';
+      this.currentItemListName = 'Todos';
+      break;
+    case 'laptops':
+      this.currentItemListId = '2';
+      this.currentItemListName = 'Laptops';
+      break;
+    case 'smartphones':
+      this.currentItemListId = '3';
+      this.currentItemListName = 'Smartphones';
+      break;
+    case 'accessories':
+      this.currentItemListId = '4';
+      this.currentItemListName = 'Accesorios';
+      break;
+    default:
+      this.currentItemListId = '1';
+      this.currentItemListName = 'Todos';
+  }
+  
+  // Guardamos estos valores en localStorage para mantenerlos entre páginas
+  localStorage.setItem('currentItemListId', this.currentItemListId);
+  localStorage.setItem('currentItemListName', this.currentItemListName);
+}
+
+// Método para obtener el item_list_id actual
+getCurrentItemListId() {
+  // Intentamos recuperar el valor de localStorage primero
+  const storedId = localStorage.getItem('currentItemListId');
+  return storedId || this.currentItemListId || '1';
+}
+
+// Método para obtener el item_list_name actual
+getCurrentItemListName() {
+  // Intentamos recuperar el valor de localStorage primero
+  const storedName = localStorage.getItem('currentItemListName');
+  return storedName || this.currentItemListName || 'Todos';
+}
+
+// 1. Evento view_item_list al cargar la página
 trackViewItemList() {
-  // Disparamos el evento inmediatamente al cargar la página
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({
-    'event': 'view_item_list',
-    'item_list_id': '1',
-    'item_list_name': 'Todos',
-    'currency': 'USD',
-    'items': [
-      {
-        'item_id': '1',
-        'item_name': 'NovaTech Phantom X9',
-        'item_category': 'Laptop',
-        'item_brand': 'TheCocktail',
-        'price': 2499.99,
-        'quantity': 1
-      },
-      {
-        'item_id': '2',
-        'item_name': 'UltraPhone Pro',
-        'item_category': 'Smartphone',
-        'item_brand': 'TheCocktail',
-        'price': 999.99,
-        'quantity': 1
-      },
-      {
-        'item_id': '3',
-        'item_name': 'AudioMax Headphones',
-        'item_category': 'Accesorios',
-        'item_brand': 'TheCocktail',
-        'price': 199.99,
-        'quantity': 1
-      }
-    ]
+  // Esperamos a que los productos se carguen en la página
+  document.addEventListener('DOMContentLoaded', () => {
+    // Obtenemos los productos directamente del DOM
+    const productElements = document.querySelectorAll('.product');
+    if (productElements.length === 0) {
+      // Si aún no hay productos, esperamos un poco más
+      setTimeout(() => {
+        this.sendViewItemListEvent();
+      }, 500);
+    } else {
+      this.sendViewItemListEvent();
+    }
   });
+}
+
+sendViewItemListEvent() {
+  const productElements = document.querySelectorAll('.product');
+  const items = [];
+  
+  productElements.forEach(product => {
+    const productId = product.dataset.id;
+    const productTitle = product.querySelector('.product__title')?.textContent;
+    const productCategory = product.dataset.category;
+    const productPrice = parseFloat(product.querySelector('.product__price')?.textContent.replace('$', '').trim());
+    
+    if (productId && productTitle) {
+      items.push({
+        item_id: productId,
+        item_name: productTitle,
+        item_category: productCategory || '',
+        item_brand: 'TheCocktail',
+        price: productPrice || 0,
+        quantity: 1
+      });
+    }
+  });
+  
+  if (items.length > 0) {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'view_item_list',
+      'item_list_id': this.getCurrentItemListId(),
+      'item_list_name': this.getCurrentItemListName(),
+      'currency': 'USD',
+      'items': items
+    });
+  }
 }
 
 // 2. Evento select_item al hacer clic en "Ver Productos"
@@ -156,39 +213,40 @@ trackViewProductsButton() {
   const viewProductsBtn = document.querySelector('a.button[href="#products"]');
   if (viewProductsBtn) {
     viewProductsBtn.addEventListener('click', () => {
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'event': 'select_item',
-        'item_list_id': '1',
-        'item_list_name': 'Todos',
-        'currency': 'USD',
-        'items': [
-          {
-            'item_id': '1',
-            'item_name': 'NovaTech Phantom X9',
-            'item_category': 'Laptop',
-            'item_brand': 'TheCocktail',
-            'price': 2499.99,
-            'quantity': 1
-          },
-          {
-            'item_id': '2',
-            'item_name': 'UltraPhone Pro',
-            'item_category': 'Smartphone',
-            'item_brand': 'TheCocktail',
-            'price': 999.99,
-            'quantity': 1
-          },
-          {
-            'item_id': '3',
-            'item_name': 'AudioMax Headphones',
-            'item_category': 'Accesorios',
-            'item_brand': 'TheCocktail',
-            'price': 199.99,
-            'quantity': 1
-          }
-        ]
+      // Al hacer clic en "Ver Productos", volvemos a la lista "Todos"
+      this.updateItemListInfo('all');
+      
+      const productElements = document.querySelectorAll('.product');
+      const items = [];
+      
+      productElements.forEach(product => {
+        const productId = product.dataset.id;
+        const productTitle = product.querySelector('.product__title')?.textContent;
+        const productCategory = product.dataset.category;
+        const productPrice = parseFloat(product.querySelector('.product__price')?.textContent.replace('$', '').trim());
+        
+        if (productId && productTitle) {
+          items.push({
+            item_id: productId,
+            item_name: productTitle,
+            item_category: productCategory || '',
+            item_brand: 'TheCocktail',
+            price: productPrice || 0,
+            quantity: 1
+          });
+        }
       });
+      
+      if (items.length > 0) {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'select_item',
+          'item_list_id': this.getCurrentItemListId(),
+          'item_list_name': this.getCurrentItemListName(),
+          'currency': 'USD',
+          'items': items
+        });
+      }
     });
   }
 }
@@ -199,270 +257,221 @@ trackFilterButtons() {
   filterButtons.forEach(button => {
     button.addEventListener('click', () => {
       const category = button.getAttribute('data-filter');
-      let categoryName = 'Todos';
       
-      switch(category) {
-        case 'laptops':
-          categoryName = 'Laptops';
-          break;
-        case 'smartphones':
-          categoryName = 'Smartphones';
-          break;
-        case 'accessories':
-          categoryName = 'Accesorios';
-          break;
-      }
+      // Actualizamos el item_list_id y item_list_name según la categoría
+      this.updateItemListInfo(category);
       
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'event': 'select_item',
-        'item_list_id': '1',
-        'item_list_name': categoryName,
-        'currency': 'USD',
-        'items': [
-          {
-            'item_id': '1',
-            'item_name': 'NovaTech Phantom X9',
-            'item_category': 'Laptop',
-            'item_brand': 'TheCocktail',
-            'price': 2499.99,
-            'quantity': 1
-          },
-          {
-            'item_id': '2',
-            'item_name': 'UltraPhone Pro',
-            'item_category': 'Smartphone',
-            'item_brand': 'TheCocktail',
-            'price': 999.99,
-            'quantity': 1
-          },
-          {
-            'item_id': '3',
-            'item_name': 'AudioMax Headphones',
-            'item_category': 'Accesorios',
-            'item_brand': 'TheCocktail',
-            'price': 199.99,
-            'quantity': 1
+      // Esperamos a que se aplique el filtro
+      setTimeout(() => {
+        const productElements = document.querySelectorAll('.product:not(.hidden)');
+        const items = [];
+        
+        productElements.forEach(product => {
+          const productId = product.dataset.id;
+          const productTitle = product.querySelector('.product__title')?.textContent;
+          const productCategory = product.dataset.category;
+          const productPrice = parseFloat(product.querySelector('.product__price')?.textContent.replace('$', '').trim());
+          
+          if (productId && productTitle) {
+            items.push({
+              item_id: productId,
+              item_name: productTitle,
+              item_category: productCategory || '',
+              item_brand: 'TheCocktail',
+              price: productPrice || 0,
+              quantity: 1
+            });
           }
-        ]
-      });
+        });
+        
+        if (items.length > 0) {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            'event': 'select_item',
+            'item_list_id': this.getCurrentItemListId(),
+            'item_list_name': this.getCurrentItemListName(),
+            'currency': 'USD',
+            'items': items
+          });
+        }
+      }, 100);
     });
   });
 }
 
-// 4. Evento select_item al hacer clic en "Ver Detalles" - CORREGIDO
-trackViewDetailsButtons() {
-  // Usamos un enfoque diferente para asegurarnos de capturar el evento
-  // Añadimos los event listeners directamente a los botones "Ver Detalles"
-  document.querySelectorAll('a.button.button--secondary[href^="product.html"]').forEach(button => {
-    button.addEventListener('click', (e) => {
-      // Extraemos el ID del producto de la URL
-      const url = new URL(button.href, window.location.origin);
-      const productId = url.searchParams.get('id');
-      
-      // Determinamos la categoría actual
-      const activeFilter = document.querySelector('.filter__button.active');
-      const categoryName = activeFilter ? activeFilter.textContent.trim() : 'Todos';
-      
-      // Enviamos el evento select_item
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'event': 'select_item',
-        'item_list_id': '1',
-        'item_list_name': categoryName,
-        'currency': 'USD',
-        'items': [{
-          'item_id': productId || '1',
-          'item_name': 'NovaTech Phantom X9', // Usamos un valor por defecto
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
-      });
-    });
-  });
-  
-  // También mantenemos la delegación de eventos para capturar botones añadidos dinámicamente
-  document.addEventListener('click', (e) => {
-    const detailsButton = e.target.closest('a.button.button--secondary[href^="product.html"]');
-    
-    if (detailsButton && !detailsButton._hasSelectItemListener) {
-      detailsButton._hasSelectItemListener = true; // Marcamos para evitar duplicados
-      
-      // Extraemos el ID del producto de la URL
-      const url = new URL(detailsButton.href, window.location.origin);
-      const productId = url.searchParams.get('id');
-      
-      // Determinamos la categoría actual
-      const activeFilter = document.querySelector('.filter__button.active');
-      const categoryName = activeFilter ? activeFilter.textContent.trim() : 'Todos';
-      
-      // Enviamos el evento select_item
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'event': 'select_item',
-        'item_list_id': '1',
-        'item_list_name': categoryName,
-        'currency': 'USD',
-        'items': [{
-          'item_id': productId || '1',
-          'item_name': 'NovaTech Phantom X9', // Usamos un valor por defecto
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
-      });
-    }
-  });
-}
-
-// 5. Evento add_to_cart al hacer clic en el botón azul de carrito
+// 4. Evento add_to_cart al hacer clic en el botón azul de carrito
 trackAddToCartButtons() {
+  // Usamos delegación de eventos para capturar todos los botones "Añadir al Carrito"
   document.addEventListener('click', (e) => {
+    // Verificamos si el clic fue en el botón o en su icono
     const addToCartButton = e.target.closest('.button.product__button');
     
     if (addToCartButton) {
-      const productId = addToCartButton.getAttribute('data-id') || '1';
-      
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'event': 'add_to_cart',
-        'currency': 'USD',
-        'item_list_id': '1',
-        'items': [{
-          'item_id': productId,
-          'item_name': 'NovaTech Phantom X9', // Valor por defecto
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
-      });
+      // Obtenemos el producto que se está añadiendo al carrito
+      const productElement = addToCartButton.closest('.product');
+      if (productElement) {
+        const productId = productElement.dataset.id;
+        const productTitle = productElement.querySelector('.product__title')?.textContent;
+        const productCategory = productElement.dataset.category;
+        const productPrice = parseFloat(productElement.querySelector('.product__price')?.textContent.replace('$', '').trim());
+        
+        if (productId && productTitle) {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            'event': 'add_to_cart',
+            'currency': 'USD',
+            'item_list_id': this.getCurrentItemListId(),
+            'items': [{
+              'item_id': productId,
+              'item_name': productTitle,
+              'item_category': productCategory || '',
+              'item_brand': 'TheCocktail',
+              'price': productPrice || 0,
+              'quantity': 1
+            }]
+          });
+          
+          console.log('Evento add_to_cart enviado:', {
+            'event': 'add_to_cart',
+            'currency': 'USD',
+            'item_list_id': this.getCurrentItemListId(),
+            'items': [{
+              'item_id': productId,
+              'item_name': productTitle,
+              'item_category': productCategory || '',
+              'item_brand': 'TheCocktail',
+              'price': productPrice || 0,
+              'quantity': 1
+            }]
+          });
+        }
+      }
     }
   });
 }
 
-// 6. Evento view_cart_icon_click al hacer clic en el icono del carrito
+// 5. Evento view_cart_icon_click al hacer clic en el icono del carrito
 trackCartIconClick() {
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('nav__cart-icon') || 
         e.target.closest('.nav__cart')) {
       
+      // Obtenemos los productos del carrito desde localStorage o donde estén almacenados
+      const cartItems = this.getCartItems();
+      
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         'event': 'view_cart_icon_click',
-        'item_list_id': '1',
+        'item_list_id': this.getCurrentItemListId(),
         'currency': 'USD',
-        'items': [{
-          'item_id': '1',
-          'item_name': 'NovaTech Phantom X9',
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
+        'items': cartItems
       });
     }
   });
 }
 
-// 7. Evento view_cart_click al hacer clic en "Ver Carrito"
+// 6. Evento view_cart_click al hacer clic en "Ver Carrito"
 trackViewCartButton() {
   document.addEventListener('click', (e) => {
     const viewCartButton = e.target.closest('a.button.button--secondary[href="cart.html"]');
     
     if (viewCartButton) {
+      // Obtenemos los productos del carrito
+      const cartItems = this.getCartItems();
+      
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         'event': 'view_cart_click',
-        'item_list_id': '1',
+        'item_list_id': this.getCurrentItemListId(),
         'currency': 'USD',
-        'items': [{
-          'item_id': '1',
-          'item_name': 'NovaTech Phantom X9',
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
+        'items': cartItems
       });
     }
   });
 }
 
-// 8. Evento begin_checkout al hacer clic en "Proceder al Pago"
+// 7. Evento begin_checkout al hacer clic en "Proceder al Pago"
 trackProceedToCheckoutButton() {
   document.addEventListener('click', (e) => {
     const checkoutButton = e.target.closest('a.button.button--primary[href="checkout.html"]');
     
     if (checkoutButton) {
+      // Obtenemos los productos del carrito
+      const cartItems = this.getCartItems();
+      
+      // Verificamos si hay un cupón aplicado
+      const hasCoupon = this.hasCouponApplied();
+      const couponCode = this.getCouponCode();
+      
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         'event': 'begin_checkout',
-        'item_list_id': '1',
+        'item_list_id': this.getCurrentItemListId(),
         'checkout_step': 1,
         'currency': 'USD',
-        'has_coupon': false,
-        'coupon': '',
-        'items': [{
-          'item_id': '1',
-          'item_name': 'NovaTech Phantom X9',
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
+        'has_coupon': hasCoupon,
+        'coupon': couponCode,
+        'items': cartItems
       });
     }
   });
 }
 
-// 9. Eventos add_to_cart y remove_from_cart para los botones + y -
+// 8. Eventos add_to_cart y remove_from_cart para los botones + y -
 trackCartQuantityButtons() {
   document.addEventListener('click', (e) => {
     const quantityButton = e.target.closest('.quantity-btn');
     
     if (quantityButton) {
       const action = quantityButton.getAttribute('data-action');
+      // Buscar el elemento padre que contiene la información del producto
+      const cartItem = quantityButton.closest('.cart-item') || quantityButton.closest('.cart-modal__item');
       
-      if (action === 'increase') {
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'add_to_cart',
-          'currency': 'USD',
-          'item_list_id': '1',
-          'items': [{
-            'item_id': '1',
-            'item_name': 'NovaTech Phantom X9',
-            'item_category': 'Laptop',
-            'item_brand': 'TheCocktail',
-            'price': 2499.99,
-            'quantity': 1
-          }]
-        });
-      } else if (action === 'decrease') {
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'remove_from_cart',
-          'currency': 'USD',
-          'item_list_id': '1',
-          'items': [{
-            'item_id': '1',
-            'item_name': 'NovaTech Phantom X9',
-            'item_category': 'Laptop',
-            'item_brand': 'TheCocktail',
-            'price': 2499.99,
-            'quantity': 1
-          }]
-        });
+      if (cartItem) {
+        const productId = cartItem.dataset.id;
+        const productName = cartItem.querySelector('.cart-modal__item-name')?.textContent;
+        const productCategory = cartItem.dataset.category;
+        const productPrice = parseFloat(cartItem.querySelector('.cart-modal__item-price')?.textContent.replace('$', '').trim());
+        
+        if (productId && productName) {
+          if (action === 'increase') {
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+              'event': 'add_to_cart',
+              'currency': 'USD',
+              'item_list_id': this.getCurrentItemListId(),
+              'items': [{
+                'item_id': productId,
+                'item_name': productName,
+                'item_category': productCategory || '',
+                'item_brand': 'TheCocktail',
+                'price': productPrice || 0,
+                'quantity': 1
+              }]
+            });
+          } else if (action === 'decrease') {
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+              'event': 'remove_from_cart',
+              'currency': 'USD',
+              'item_list_id': this.getCurrentItemListId(),
+              'items': [{
+                'item_id': productId,
+                'item_name': productName,
+                'item_category': productCategory || '',
+                'item_brand': 'TheCocktail',
+                'price': productPrice || 0,
+                'quantity': 1
+              }]
+            });
+          }
+        }
       }
     }
   });
 }
 
-// 10. Evento social_share al hacer clic en los iconos de redes sociales
+// 9. Evento social_share al hacer clic en los iconos de redes sociales
 trackSocialShareButtons() {
   document.querySelectorAll('.footer__social-link').forEach(link => {
     link.addEventListener('click', (e) => {
@@ -475,21 +484,117 @@ trackSocialShareButtons() {
         socialNetwork = 'Instagram';
       }
       
+      // Obtenemos el producto destacado o el último añadido al carrito
+      const featuredProduct = this.getFeaturedProduct();
+      
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         'event': 'social_share',
         'social_network': socialNetwork,
-        'items': [{
-          'item_id': '1',
-          'item_name': 'NovaTech Phantom X9',
-          'item_category': 'Laptop',
-          'item_brand': 'TheCocktail',
-          'price': 2499.99,
-          'quantity': 1
-        }]
+        'items': featuredProduct ? [featuredProduct] : []
       });
     });
   });
+}
+
+// Método para obtener los productos del carrito
+getCartItems() {
+  // Intentamos obtener los productos del carrito desde el localStorage
+  try {
+    const cartData = localStorage.getItem('cart');
+    if (cartData) {
+      const cart = JSON.parse(cartData);
+      return cart.items.map(item => ({
+        item_id: item.id,
+        item_name: item.name,
+        item_category: item.category || '',
+        item_brand: 'TheCocktail',
+        price: item.price || 0,
+        quantity: item.quantity || 1
+      }));
+    }
+  } catch (e) {
+    console.error('Error al obtener productos del carrito:', e);
+  }
+  
+  // Si no podemos obtener los productos del localStorage, intentamos obtenerlos del DOM
+  const cartItems = document.querySelectorAll('.cart-modal__item');
+  if (cartItems.length > 0) {
+    return Array.from(cartItems).map(item => {
+      const productId = item.dataset.id;
+      const productName = item.querySelector('.cart-modal__item-name')?.textContent;
+      const productCategory = item.dataset.category;
+      const productPrice = parseFloat(item.querySelector('.cart-modal__item-price')?.textContent.replace('$', '').trim());
+      const quantity = parseInt(item.querySelector('.cart-modal__item-quantity')?.textContent || '1');
+      
+      return {
+        item_id: productId || '',
+        item_name: productName || '',
+        item_category: productCategory || '',
+        item_brand: 'TheCocktail',
+        price: productPrice || 0,
+        quantity: quantity || 1
+      };
+    });
+  }
+  
+  // Si no hay productos en el carrito, devolvemos un array vacío
+  return [];
+}
+
+// Método para verificar si hay un cupón aplicado
+hasCouponApplied() {
+  try {
+    const cartData = localStorage.getItem('cart');
+    if (cartData) {
+      const cart = JSON.parse(cartData);
+      return !!cart.coupon;
+    }
+  } catch (e) {
+    console.error('Error al verificar cupón:', e);
+  }
+  return false;
+}
+
+// Método para obtener el código del cupón
+getCouponCode() {
+  try {
+    const cartData = localStorage.getItem('cart');
+    if (cartData) {
+      const cart = JSON.parse(cartData);
+      return cart.coupon || '';
+    }
+  } catch (e) {
+    console.error('Error al obtener código de cupón:', e);
+  }
+  return '';
+}
+
+// Método para obtener el producto destacado
+getFeaturedProduct() {
+  // Intentamos obtener el primer producto visible
+  const featuredProduct = document.querySelector('.product');
+  if (featuredProduct) {
+    const productId = featuredProduct.dataset.id;
+    const productTitle = featuredProduct.querySelector('.product__title')?.textContent;
+    const productCategory = featuredProduct.dataset.category;
+    const productPrice = parseFloat(featuredProduct.querySelector('.product__price')?.textContent.replace('$', '').trim());
+    
+    if (productId && productTitle) {
+      return {
+        item_id: productId,
+        item_name: productTitle,
+        item_category: productCategory || '',
+        item_brand: 'TheCocktail',
+        price: productPrice || 0,
+        quantity: 1
+      };
+    }
+  }
+  
+  // Si no hay productos visibles, intentamos obtener uno del carrito
+  const cartItems = this.getCartItems();
+  return cartItems.length > 0 ? cartItems[0] : null;
 }
 }
 
